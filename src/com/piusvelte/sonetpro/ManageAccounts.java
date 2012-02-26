@@ -66,6 +66,7 @@ import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
 import android.widget.TextView;
+import android.widget.Toast;
 import android.widget.AdapterView.AdapterContextMenuInfo;
 
 public class ManageAccounts extends ListActivity implements OnClickListener, DialogInterface.OnClickListener {
@@ -280,10 +281,11 @@ public class ManageAccounts extends ListActivity implements OnClickListener, Dia
 
 	@Override
 	protected void onPause() {
-		super.onPause();
 		if (!mAddingAccount && mUpdateWidget) {
+			(Toast.makeText(getApplicationContext(), getString(R.string.refreshing), Toast.LENGTH_LONG)).show();
 			startService(new Intent(this, SonetService.class).setAction(ACTION_REFRESH).putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, new int[]{mAppWidgetId}));
 		}
+		super.onPause();
 	}
 
 	@Override

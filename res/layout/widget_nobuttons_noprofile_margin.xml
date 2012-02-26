@@ -23,6 +23,7 @@
 	<LinearLayout android:id="@+id/messages"
 		android:layout_width="fill_parent" android:layout_height="fill_parent"
 		android:layout_below="@id/buttons" android:orientation="vertical">
+<!--
 		<RelativeLayout android:id="@+id/item0"
 			android:orientation="horizontal" android:layout_width="fill_parent"
 			android:layout_height="wrap_content">
@@ -727,5 +728,6 @@
 				android:layout_alignBottom="@id/message_bg_clear15" android:paddingBottom="4dip"
 				android:paddingRight="4dip" />
 		</RelativeLayout>
+-->
 	</LinearLayout>
 </RelativeLayout>

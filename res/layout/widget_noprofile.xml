@@ -38,31 +38,37 @@
 		<TextView android:id="@+id/button_post" android:layout_width="wrap_content"
 			android:layout_height="wrap_content" android:text="@string/button_post"
 			android:layout_alignParentTop="true" android:layout_alignParentLeft="true"
-			android:clickable="true" android:padding="4dip" />
+			android:clickable="true" android:padding="4dip"
+			android:textColor="@color/default_buttons_color" />
 		<TextView android:id="@+id/button_configure"
 			android:layout_width="wrap_content" android:layout_height="wrap_content"
 			android:text="@string/settings" android:layout_alignParentTop="true"
 			android:layout_toRightOf="@id/button_post" android:clickable="true"
-			android:padding="4dip" />
+			android:padding="4dip"
+			android:textColor="@color/default_buttons_color" />
 		<TextView android:id="@+id/button_refresh"
 			android:layout_width="wrap_content" android:layout_height="wrap_content"
 			android:text="@string/button_refresh" android:layout_alignParentTop="true"
 			android:layout_toRightOf="@id/button_configure" android:clickable="true"
-			android:padding="4dip" />
+			android:padding="4dip"
+			android:textColor="@color/default_buttons_color" />
 		<TextView android:id="@+id/page_down"
 			android:layout_width="wrap_content" android:layout_height="wrap_content"
 			android:text="@string/greater_than" android:layout_alignParentTop="true"
 			android:layout_alignParentRight="true" android:clickable="true"
-			android:padding="4dip" />
+			android:padding="4dip"
+			android:textColor="@color/default_buttons_color" />
 		<TextView android:id="@+id/page_up"
 			android:layout_width="wrap_content" android:layout_height="wrap_content"
 			android:text="@string/less_than" android:layout_alignParentTop="true"
 			android:layout_toLeftOf="@id/page_down" android:clickable="true"
-			android:padding="4dip" />
+			android:padding="4dip"
+			android:textColor="@color/default_buttons_color" />
 	</RelativeLayout>
 	<LinearLayout android:id="@+id/messages"
 		android:layout_width="fill_parent" android:layout_height="fill_parent"
 		android:layout_below="@id/buttons" android:orientation="vertical">
+<!--
 		<RelativeLayout android:id="@+id/item0"
 			android:orientation="horizontal" android:layout_width="fill_parent"
 			android:layout_height="wrap_content">
@@ -767,5 +773,6 @@
 				android:layout_alignBottom="@id/message_bg_clear15" android:paddingBottom="4dip"
 				android:paddingRight="4dip" />
 		</RelativeLayout>
+-->
 	</LinearLayout>
 </RelativeLayout>

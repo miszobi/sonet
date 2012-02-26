@@ -131,4 +131,5 @@
 	<string name="googleplusbeta">Google\u002B currently allows reading of your own public posts only. Comments are not provided yet by Google. As new features are available from Google, they will be included in Sonet.</string>
 	<string name="less_than">\u0020\u003c\u003c\u0020</string>
 	<string name="greater_than">\u0020\u003e\u003e\u0020</string>
+	<string name="refreshing">Refreshing Sonet widget</string>
 </resources>

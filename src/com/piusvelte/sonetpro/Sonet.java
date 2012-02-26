@@ -518,6 +518,8 @@ public class Sonet {
 		public static final String ESID = "esid";
 		public static final String PROFILE_BG = "profiles_bg_color";
 		public static final String FRIEND_BG = "friend_bg";
+		public static final String IMAGE_BG = "image_bg";
+		public static final String IMAGE = "image";
 
 	}
 
@@ -567,6 +569,20 @@ public class Sonet {
 		public static final String STATUS_ID = "status_id";
 		public static final String LINK_URI = "link_uri";
 		public static final String LINK_TYPE = "link_type";
+		
+	}
+	
+	public static final class Status_images implements BaseColumns {
+
+		private Status_images() {
+		}
+
+		public static final Uri CONTENT_URI = Uri.parse("content://" + SonetProvider.AUTHORITY + "/status_images");
+
+		public static final String CONTENT_TYPE = "vnd.android.cursor.dir/vnd.piusvelte.status_images";
+		public static final String STATUS_ID = "status_id";
+		public static final String IMAGE = "image";
+		public static final String IMAGE_BG = "image_bg";
 		
 	}
 

@@ -291,6 +291,7 @@ public class StatusDialog extends Activity implements DialogInterface.OnClickLis
 			dialog.cancel();
 		case REFRESH:
 			if (mAppWidgetId != -1) {
+				(Toast.makeText(getApplicationContext(), getString(R.string.refreshing), Toast.LENGTH_LONG)).show();
 				startService(new Intent(this, SonetService.class).setAction(ACTION_REFRESH).putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, new int[]{mAppWidgetId}));
 				dialog.cancel();
 			} else {
@@ -301,6 +302,7 @@ public class StatusDialog extends Activity implements DialogInterface.OnClickLis
 					.setItems(widgets, new OnClickListener() {
 						@Override
 						public void onClick(DialogInterface arg0, int arg1) {
+							(Toast.makeText(StatusDialog.this.getApplicationContext(), getString(R.string.refreshing), Toast.LENGTH_LONG)).show();
 							startService(new Intent(StatusDialog.this, SonetService.class).setAction(ACTION_REFRESH).putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, new int[]{mAppWidgetIds[arg1]}));
 							arg0.cancel();
 						}					
@@ -309,6 +311,7 @@ public class StatusDialog extends Activity implements DialogInterface.OnClickLis
 						@Override
 						public void onClick(DialogInterface arg0, int which) {
 							// refresh all
+							(Toast.makeText(StatusDialog.this.getApplicationContext(), getString(R.string.refreshing), Toast.LENGTH_LONG)).show();
 							startService(new Intent(StatusDialog.this, SonetService.class).putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, mAppWidgetIds));
 							arg0.cancel();
 						}
