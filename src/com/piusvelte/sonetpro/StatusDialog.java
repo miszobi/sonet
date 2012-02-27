@@ -71,9 +71,10 @@ public class StatusDialog extends Activity implements DialogInterface.OnClickLis
 	private static final int PROFILE = 5;
 	private int[] mAppWidgetIds;
 	private String[] items = null;
-	private String mEsid;
+	private String mSid = null;
+	private String mEsid = null;
 	private int mService;
-	private String mServiceName;
+	private String mServiceName = null;
 	private ProgressDialog mLoadingDialog;
 	private StatusLoader mStatusLoader;
 	private Rect mRect;
@@ -178,6 +179,12 @@ public class StatusDialog extends Activity implements DialogInterface.OnClickLis
 				if (mService == GOOGLEPLUS) {
 					//TODO: open browser for now...
 					startActivity(new Intent(Intent.ACTION_VIEW).setData(Uri.parse("https://plus.google.com")));
+				} else if (mService == PINTEREST) {
+					if (mSid != null) {
+						startActivity(new Intent(Intent.ACTION_VIEW).setData(Uri.parse(String.format(PINTEREST_PIN, mSid))));
+					} else {
+						startActivity(new Intent(Intent.ACTION_VIEW).setData(Uri.parse("https://pinterest.com")));
+					}
 				} else {
 					startActivity(new Intent(this, SonetComments.class).setData(mData).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
 				}
@@ -190,7 +197,9 @@ public class StatusDialog extends Activity implements DialogInterface.OnClickLis
 			if (mAppWidgetId != -1) {
 				if (mService == GOOGLEPLUS) {
 					//TODO: open browser for now...
-					startActivity(new Intent(Intent.ACTION_VIEW).setData(Uri.parse("https://plus.google.com")).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+					startActivity(new Intent(Intent.ACTION_VIEW).setData(Uri.parse("https://plus.google.com")));
+				} else if (mService == PINTEREST) {
+					startActivity(new Intent(Intent.ACTION_VIEW).setData(Uri.parse("https://pinterest.com")));
 				} else {
 					startActivity(new Intent(this, SonetCreatePost.class).setData(Uri.withAppendedPath(Accounts.CONTENT_URI, Long.toString(mAccount))).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
 				}
@@ -619,6 +628,13 @@ public class StatusDialog extends Activity implements DialogInterface.OnClickLis
 			case GOOGLEPLUS:
 				startActivity(new Intent(Intent.ACTION_VIEW).setData(Uri.parse(String.format(GOOGLEPLUS_PROFILE, mEsid))));
 				break;
+			case PINTEREST:
+				if (mEsid != null) {
+					startActivity(new Intent(Intent.ACTION_VIEW).setData(Uri.parse(String.format(PINTEREST_PROFILE, mEsid))));
+				} else {
+					startActivity(new Intent(Intent.ACTION_VIEW).setData(Uri.parse("https://pinterest.com")));
+				}
+				break;
 			case CHATTER:
 				account = this.getContentResolver().query(Accounts.CONTENT_URI, new String[]{Accounts._ID, Accounts.TOKEN}, Accounts._ID + "=?", new String[]{Long.toString(mAccount)}, null);
 				if (account.moveToFirst()) {
@@ -740,13 +756,19 @@ public class StatusDialog extends Activity implements DialogInterface.OnClickLis
 
 		@Override
 		protected Void doInBackground(Void... params) {
-			Cursor c = getContentResolver().query(Statuses_styles.CONTENT_URI, new String[]{Statuses_styles._ID, Statuses_styles.WIDGET, Statuses_styles.ACCOUNT, Statuses_styles.ESID, Statuses_styles.MESSAGE, Statuses_styles.FRIEND, Statuses_styles.SERVICE}, Statuses_styles._ID + "=?", new String[] {mData.getLastPathSegment()}, null);
+			Cursor c = getContentResolver().query(Statuses_styles.CONTENT_URI, new String[]{Statuses_styles._ID, Statuses_styles.WIDGET, Statuses_styles.ACCOUNT, Statuses_styles.ESID, Statuses_styles.MESSAGE, Statuses_styles.FRIEND, Statuses_styles.SERVICE, Statuses_styles.SID}, Statuses_styles._ID + "=?", new String[] {mData.getLastPathSegment()}, null);
 			if (c.moveToFirst()) {
 				mAppWidgetId = c.getInt(1);
 				mAccount = c.getLong(2);
 				// informational messages go directly to settings, otherwise, load up the options
 				if (mAccount != Sonet.INVALID_ACCOUNT_ID) {
-					mEsid = mSonetCrypto.Decrypt(c.getString(3));
+					if (mService == PINTEREST) {
+						// pinterest uses the username for the profile page
+						mEsid = c.getString(5);
+					} else {
+						mEsid = mSonetCrypto.Decrypt(c.getString(3));
+					}
+					mSid = mSonetCrypto.Decrypt(c.getString(7));
 					mService = c.getInt(6);
 					if (mService == SMS) {
 						// lookup the contact, else null mRect

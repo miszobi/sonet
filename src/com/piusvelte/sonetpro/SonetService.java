@@ -1764,6 +1764,60 @@ public class SonetService extends Service {
 									Log.e(TAG,e.toString());
 								}
 								break;
+							case PINTEREST:
+								// parse the response
+								if ((response = sonetHttpClient.httpResponse(new HttpGet(String.format(PINTEREST_BASE_URL, PINTEREST_URL_FEED)))) != null) {
+									// if not a full_refresh, only update the status_bg and icons
+									try {
+										JSONObject pins = new JSONObject(response);
+										if (pins.has("pins")) {
+											statusesArray = pins.getJSONArray("pins");
+											// if there are updates, clear the cache
+											int e2 = statusesArray.length();
+											if (e2 > 0) {
+												removeOldStatuses(widget, Long.toString(account));
+												for (int e = 0; e < e2; e++) {
+													links.clear();
+													statusObj = statusesArray.getJSONObject(e);
+													friendObj = statusObj.getJSONObject(Suser);
+													long date = parseDate(statusObj.getString(Screated_at), PINTEREST_DATE_FORMAT);
+													int commentCount = 0;
+													if (statusObj.has(Scounts)) {
+														JSONObject counts = statusObj.getJSONObject(Scounts);
+														if (counts.has(Scomments)) {
+															commentCount = counts.getInt(Scomments);
+														}
+													}
+													if (statusObj.has(Simages)) {
+														JSONObject images = statusObj.getJSONObject(Simages);
+														if (images.has(Smobile)) {
+															links.add(new String[]{Simage, statusObj.getString(Smobile)});
+														}
+													}
+													addStatusItem(date,
+															friendObj.getString(Susername),
+															display_profile ? friendObj.getString(Simage_url) : null,
+																	String.format(getString(R.string.messageWithCommentCount), statusObj.getString(Sdescription), commentCount),
+																	service,
+																	time24hr,
+																	appWidgetId,
+																	account,
+																	statusObj.getString(Sid),
+																	friendObj.getString(Sid),
+																	links);
+												}
+											} else {
+												updateCreatedText = true;
+											}
+										} else {
+											updateCreatedText = true;
+										}
+									} catch (JSONException e) {
+										Log.e(TAG, service + ":" + e.toString());
+									}
+								} else {
+									updateCreatedText = true;
+								}
 							case CHATTER:
 								// need to get an updated access_token
 								String accessResponse = sonetHttpClient.httpResponse(new HttpPost(String.format(CHATTER_URL_ACCESS, CHATTER_KEY, token)));
@@ -2149,17 +2203,43 @@ public class SonetService extends Service {
 				linkValues.put(Status_links.LINK_URI, s[1]);
 				getContentResolver().insert(Status_links.CONTENT_URI, linkValues);
 			}
+			//TODO need to scale the image with a max width, and trim to a height of 48
 			if (imageUrl != null) {
 				byte[] image = null;
 				if (url != null) {
-					// get profile
 					final SonetHttpClient sonetHttpClient = SonetHttpClient.getInstance(getApplicationContext());
 					image = sonetHttpClient.httpBlobResponse(new HttpGet(imageUrl));
 				}
 				if (image != null) {
 					Bitmap imageBmp = BitmapFactory.decodeByteArray(image, 0, image.length, sBFOptions);
 					if (imageBmp != null) {
-						Bitmap scaledImageBmp = Bitmap.createScaledBitmap(imageBmp, imageBmp.getWidth() * 48 / imageBmp.getHeight(), 48, true);
+						Bitmap scaledImageBmp = null;
+						int width = imageBmp.getWidth();
+						int height = imageBmp.getHeight();
+						// 4 x 3 => 128 x 96
+						//TODO the cropping is backwards
+						if (width > height) {
+							// landscape
+							int targetSize = Math.round(width / 4 * 3);
+							if (height > targetSize) {
+								Bitmap croppedBmp = Bitmap.createBitmap(imageBmp, 0, 0, width, targetSize);
+								scaledImageBmp = Bitmap.createScaledBitmap(croppedBmp, 128, Math.round(croppedBmp.getHeight() * 128 / width), true);
+								croppedBmp.recycle();
+							} else {
+								scaledImageBmp = Bitmap.createScaledBitmap(imageBmp, 128, Math.round(height * 128 / width), true);
+							}
+						} else {
+							// portrait
+							int targetSize = Math.round(height / 3 * 4);
+							if (width > targetSize) {
+								Bitmap croppedBmp = Bitmap.createBitmap(imageBmp, 0, 0, targetSize, height);
+								scaledImageBmp = Bitmap.createScaledBitmap(croppedBmp, 128, Math.round(croppedBmp.getHeight() * 128 / width), true);
+								croppedBmp.recycle();
+							} else {
+								scaledImageBmp = Bitmap.createScaledBitmap(imageBmp, 128, Math.round(height * 128 / width), true);
+							}
+						}
+						scaledImageBmp = Bitmap.createScaledBitmap(imageBmp, imageBmp.getWidth() * 48 / imageBmp.getHeight(), 48, true);
 						ByteArrayOutputStream imageStream = new ByteArrayOutputStream();
 						scaledImageBmp.compress(Bitmap.CompressFormat.PNG, 100, imageStream);
 						image = imageStream.toByteArray();
@@ -2443,21 +2523,21 @@ public class SonetService extends Service {
 				}
 			}
 			if (!sNativeScrollingSupported) {
-//				int[] map_message = {R.id.message0, R.id.message1, R.id.message2, R.id.message3, R.id.message4, R.id.message5, R.id.message6, R.id.message7, R.id.message8, R.id.message9, R.id.message10, R.id.message11, R.id.message12, R.id.message13, R.id.message14, R.id.message15},
-//						map_item = {R.id.item0, R.id.item1, R.id.item2, R.id.item3, R.id.item4, R.id.item5, R.id.item6, R.id.item7, R.id.item8, R.id.item9, R.id.item10, R.id.item11, R.id.item12, R.id.item13, R.id.item14, R.id.item15},
-//						map_profile = {R.id.profile0, R.id.profile1, R.id.profile2, R.id.profile3, R.id.profile4, R.id.profile5, R.id.profile6, R.id.profile7, R.id.profile8, R.id.profile9, R.id.profile10, R.id.profile11, R.id.profile12, R.id.profile13, R.id.profile14, R.id.profile15},
-//						map_screenname = {R.id.friend0, R.id.friend1, R.id.friend2, R.id.friend3, R.id.friend4, R.id.friend5, R.id.friend6, R.id.friend7, R.id.friend8, R.id.friend9, R.id.friend10, R.id.friend11, R.id.friend12, R.id.friend13, R.id.friend14, R.id.friend15},
-//						map_created = {R.id.created0, R.id.created1, R.id.created2, R.id.created3, R.id.created4, R.id.created5, R.id.created6, R.id.created7, R.id.created8, R.id.created9, R.id.created10, R.id.created11, R.id.created12, R.id.created13, R.id.created14, R.id.created15},
-//						map_status_bg = {R.id.status_bg0, R.id.status_bg1, R.id.status_bg2, R.id.status_bg3, R.id.status_bg4, R.id.status_bg5, R.id.status_bg6, R.id.status_bg7, R.id.status_bg8, R.id.status_bg9, R.id.status_bg10, R.id.status_bg11, R.id.status_bg12, R.id.status_bg13, R.id.status_bg14, R.id.status_bg15},
-//						map_friend_bg_clear = {R.id.friend_bg_clear0, R.id.friend_bg_clear1, R.id.friend_bg_clear2, R.id.friend_bg_clear3, R.id.friend_bg_clear4, R.id.friend_bg_clear5, R.id.friend_bg_clear6, R.id.friend_bg_clear7, R.id.friend_bg_clear8, R.id.friend_bg_clear9, R.id.friend_bg_clear10, R.id.friend_bg_clear11, R.id.friend_bg_clear12, R.id.friend_bg_clear13, R.id.friend_bg_clear14, R.id.friend_bg_clear15},
-//						map_message_bg_clear = {R.id.message_bg_clear0, R.id.message_bg_clear1, R.id.message_bg_clear2, R.id.message_bg_clear3, R.id.message_bg_clear4, R.id.message_bg_clear5, R.id.message_bg_clear6, R.id.message_bg_clear7, R.id.message_bg_clear8, R.id.message_bg_clear9, R.id.message_bg_clear10, R.id.message_bg_clear11, R.id.message_bg_clear12, R.id.message_bg_clear13, R.id.message_bg_clear14, R.id.message_bg_clear15},
-//						map_icon = {R.id.icon0, R.id.icon1, R.id.icon2, R.id.icon3, R.id.icon4, R.id.icon5, R.id.icon6, R.id.icon7, R.id.icon8, R.id.icon9, R.id.icon10, R.id.icon11, R.id.icon12, R.id.icon13, R.id.icon14, R.id.icon15},
-//						map_profile_bg = {R.id.profile_bg0, R.id.profile_bg1, R.id.profile_bg2, R.id.profile_bg3, R.id.profile_bg4, R.id.profile_bg5, R.id.profile_bg6, R.id.profile_bg7, R.id.profile_bg8, R.id.profile_bg9, R.id.profile_bg10, R.id.profile_bg11, R.id.profile_bg12, R.id.profile_bg13, R.id.profile_bg14, R.id.profile_bg15},
-//						map_friend_bg = {R.id.friend_bg0, R.id.friend_bg1, R.id.friend_bg2, R.id.friend_bg3, R.id.friend_bg4, R.id.friend_bg5, R.id.friend_bg6, R.id.friend_bg7, R.id.friend_bg8, R.id.friend_bg9, R.id.friend_bg10, R.id.friend_bg11, R.id.friend_bg12, R.id.friend_bg13, R.id.friend_bg14, R.id.friend_bg15};
+				//				int[] map_message = {R.id.message0, R.id.message1, R.id.message2, R.id.message3, R.id.message4, R.id.message5, R.id.message6, R.id.message7, R.id.message8, R.id.message9, R.id.message10, R.id.message11, R.id.message12, R.id.message13, R.id.message14, R.id.message15},
+				//						map_item = {R.id.item0, R.id.item1, R.id.item2, R.id.item3, R.id.item4, R.id.item5, R.id.item6, R.id.item7, R.id.item8, R.id.item9, R.id.item10, R.id.item11, R.id.item12, R.id.item13, R.id.item14, R.id.item15},
+				//						map_profile = {R.id.profile0, R.id.profile1, R.id.profile2, R.id.profile3, R.id.profile4, R.id.profile5, R.id.profile6, R.id.profile7, R.id.profile8, R.id.profile9, R.id.profile10, R.id.profile11, R.id.profile12, R.id.profile13, R.id.profile14, R.id.profile15},
+				//						map_screenname = {R.id.friend0, R.id.friend1, R.id.friend2, R.id.friend3, R.id.friend4, R.id.friend5, R.id.friend6, R.id.friend7, R.id.friend8, R.id.friend9, R.id.friend10, R.id.friend11, R.id.friend12, R.id.friend13, R.id.friend14, R.id.friend15},
+				//						map_created = {R.id.created0, R.id.created1, R.id.created2, R.id.created3, R.id.created4, R.id.created5, R.id.created6, R.id.created7, R.id.created8, R.id.created9, R.id.created10, R.id.created11, R.id.created12, R.id.created13, R.id.created14, R.id.created15},
+				//						map_status_bg = {R.id.status_bg0, R.id.status_bg1, R.id.status_bg2, R.id.status_bg3, R.id.status_bg4, R.id.status_bg5, R.id.status_bg6, R.id.status_bg7, R.id.status_bg8, R.id.status_bg9, R.id.status_bg10, R.id.status_bg11, R.id.status_bg12, R.id.status_bg13, R.id.status_bg14, R.id.status_bg15},
+				//						map_friend_bg_clear = {R.id.friend_bg_clear0, R.id.friend_bg_clear1, R.id.friend_bg_clear2, R.id.friend_bg_clear3, R.id.friend_bg_clear4, R.id.friend_bg_clear5, R.id.friend_bg_clear6, R.id.friend_bg_clear7, R.id.friend_bg_clear8, R.id.friend_bg_clear9, R.id.friend_bg_clear10, R.id.friend_bg_clear11, R.id.friend_bg_clear12, R.id.friend_bg_clear13, R.id.friend_bg_clear14, R.id.friend_bg_clear15},
+				//						map_message_bg_clear = {R.id.message_bg_clear0, R.id.message_bg_clear1, R.id.message_bg_clear2, R.id.message_bg_clear3, R.id.message_bg_clear4, R.id.message_bg_clear5, R.id.message_bg_clear6, R.id.message_bg_clear7, R.id.message_bg_clear8, R.id.message_bg_clear9, R.id.message_bg_clear10, R.id.message_bg_clear11, R.id.message_bg_clear12, R.id.message_bg_clear13, R.id.message_bg_clear14, R.id.message_bg_clear15},
+				//						map_icon = {R.id.icon0, R.id.icon1, R.id.icon2, R.id.icon3, R.id.icon4, R.id.icon5, R.id.icon6, R.id.icon7, R.id.icon8, R.id.icon9, R.id.icon10, R.id.icon11, R.id.icon12, R.id.icon13, R.id.icon14, R.id.icon15},
+				//						map_profile_bg = {R.id.profile_bg0, R.id.profile_bg1, R.id.profile_bg2, R.id.profile_bg3, R.id.profile_bg4, R.id.profile_bg5, R.id.profile_bg6, R.id.profile_bg7, R.id.profile_bg8, R.id.profile_bg9, R.id.profile_bg10, R.id.profile_bg11, R.id.profile_bg12, R.id.profile_bg13, R.id.profile_bg14, R.id.profile_bg15},
+				//						map_friend_bg = {R.id.friend_bg0, R.id.friend_bg1, R.id.friend_bg2, R.id.friend_bg3, R.id.friend_bg4, R.id.friend_bg5, R.id.friend_bg6, R.id.friend_bg7, R.id.friend_bg8, R.id.friend_bg9, R.id.friend_bg10, R.id.friend_bg11, R.id.friend_bg12, R.id.friend_bg13, R.id.friend_bg14, R.id.friend_bg15};
 				Cursor statuses_styles = getContentResolver().query(Uri.withAppendedPath(Statuses_styles.CONTENT_URI, widget), new String[]{Statuses_styles._ID, Statuses_styles.FRIEND, Statuses_styles.PROFILE, Statuses_styles.MESSAGE, Statuses_styles.CREATEDTEXT, Statuses_styles.MESSAGES_COLOR, Statuses_styles.FRIEND_COLOR, Statuses_styles.CREATED_COLOR, Statuses_styles.MESSAGES_TEXTSIZE, Statuses_styles.FRIEND_TEXTSIZE, Statuses_styles.CREATED_TEXTSIZE, Statuses_styles.STATUS_BG, Statuses_styles.ICON, Statuses_styles.PROFILE_BG, Statuses_styles.FRIEND_BG, Statuses_styles.IMAGE_BG, Statuses_styles.IMAGE}, null, null, Statuses_styles.CREATED + " DESC LIMIT " + page + ",-1");
 				if (statuses_styles.moveToFirst()) {
 					int count_status = 0;
-//					while (!statuses_styles.isAfterLast() && (count_status < map_item.length)) {
+					//					while (!statuses_styles.isAfterLast() && (count_status < map_item.length)) {
 					while (!statuses_styles.isAfterLast() && (count_status < 16)) {
 						int friend_color = statuses_styles.getInt(6),
 								created_color = statuses_styles.getInt(7),
@@ -2474,7 +2554,7 @@ public class SonetService extends Service {
 							if (profile_bg != null) {
 								Bitmap profile_bgbmp = BitmapFactory.decodeByteArray(profile_bg, 0, profile_bg.length, sBFOptions);
 								if (profile_bgbmp != null) {
-//									views.setImageViewBitmap(map_profile_bg[count_status], profile_bgbmp);
+									//									views.setImageViewBitmap(map_profile_bg[count_status], profile_bgbmp);
 									itemView.setImageViewBitmap(R.id.profile_bg, profile_bgbmp);
 								}
 							}
@@ -2482,7 +2562,7 @@ public class SonetService extends Service {
 							if (profile != null) {
 								Bitmap profilebmp = BitmapFactory.decodeByteArray(profile, 0, profile.length, sBFOptions);
 								if (profilebmp != null) {
-//									views.setImageViewBitmap(map_profile[count_status], profilebmp);
+									//									views.setImageViewBitmap(map_profile[count_status], profilebmp);
 									itemView.setImageViewBitmap(R.id.profile, profilebmp);
 								}
 							}
@@ -2494,24 +2574,24 @@ public class SonetService extends Service {
 						if (icon != null) {
 							Bitmap iconbmp = BitmapFactory.decodeByteArray(icon, 0, icon.length, sBFOptions);
 							if (iconbmp != null) {
-//								views.setImageViewBitmap(map_icon[count_status], iconbmp);
+								//								views.setImageViewBitmap(map_icon[count_status], iconbmp);
 								itemView.setImageViewBitmap(R.id.icon, iconbmp);
 							}
 						}
-//						views.setTextViewText(map_friend_bg_clear[count_status], statuses_styles.getString(1));
+						//						views.setTextViewText(map_friend_bg_clear[count_status], statuses_styles.getString(1));
 						itemView.setTextViewText(R.id.friend_bg_clear, statuses_styles.getString(1));
-//						views.setFloat(map_friend_bg_clear[count_status], "setTextSize", friend_textsize);
+						//						views.setFloat(map_friend_bg_clear[count_status], "setTextSize", friend_textsize);
 						itemView.setFloat(R.id.friend_bg_clear, "setTextSize", friend_textsize);
-//						views.setTextViewText(map_message_bg_clear[count_status], statuses_styles.getString(3));
+						//						views.setTextViewText(map_message_bg_clear[count_status], statuses_styles.getString(3));
 						itemView.setTextViewText(R.id.message_bg_clear, statuses_styles.getString(3));
-//						views.setFloat(map_message_bg_clear[count_status], "setTextSize", messages_textsize);
+						//						views.setFloat(map_message_bg_clear[count_status], "setTextSize", messages_textsize);
 						itemView.setFloat(R.id.message_bg_clear, "setTextSize", messages_textsize);
 						// set friends background
 						byte[] friend_bg = statuses_styles.getBlob(14);
 						if (friend_bg != null) {
 							Bitmap friend_bgbmp = BitmapFactory.decodeByteArray(friend_bg, 0, friend_bg.length, sBFOptions);
 							if (friend_bgbmp != null) {
-//								views.setImageViewBitmap(map_friend_bg[count_status], friend_bgbmp);
+								//								views.setImageViewBitmap(map_friend_bg[count_status], friend_bgbmp);
 								itemView.setImageViewBitmap(R.id.friend_bg, friend_bgbmp);
 							}
 						}
@@ -2520,7 +2600,7 @@ public class SonetService extends Service {
 						if (status_bg != null) {
 							Bitmap status_bgbmp = BitmapFactory.decodeByteArray(status_bg, 0, status_bg.length, sBFOptions);
 							if (status_bgbmp != null) {
-//								views.setImageViewBitmap(map_status_bg[count_status], status_bgbmp);
+								//								views.setImageViewBitmap(map_status_bg[count_status], status_bgbmp);
 								itemView.setImageViewBitmap(R.id.status_bg, status_bgbmp);
 							}
 						}
@@ -2535,25 +2615,25 @@ public class SonetService extends Service {
 								itemView.setImageViewBitmap(R.id.image, imageBmp);
 							}
 						}
-//						views.setTextViewText(map_message[count_status], statuses_styles.getString(3));
+						//						views.setTextViewText(map_message[count_status], statuses_styles.getString(3));
 						itemView.setTextViewText(R.id.message, statuses_styles.getString(3));
-//						views.setTextColor(map_message[count_status], messages_color);
+						//						views.setTextColor(map_message[count_status], messages_color);
 						itemView.setTextColor(R.id.message, messages_color);
-//						views.setFloat(map_message[count_status], "setTextSize", messages_textsize);
+						//						views.setFloat(map_message[count_status], "setTextSize", messages_textsize);
 						itemView.setFloat(R.id.message, "setTextSize", messages_textsize);
-//						views.setOnClickPendingIntent(map_item[count_status], PendingIntent.getActivity(SonetService.this, 0, new Intent(SonetService.this, StatusDialog.class).setData(Uri.withAppendedPath(Statuses_styles.CONTENT_URI, Long.toString(statuses_styles.getLong(0)))), 0));
+						//						views.setOnClickPendingIntent(map_item[count_status], PendingIntent.getActivity(SonetService.this, 0, new Intent(SonetService.this, StatusDialog.class).setData(Uri.withAppendedPath(Statuses_styles.CONTENT_URI, Long.toString(statuses_styles.getLong(0)))), 0));
 						itemView.setOnClickPendingIntent(R.id.item, PendingIntent.getActivity(SonetService.this, 0, new Intent(SonetService.this, StatusDialog.class).setData(Uri.withAppendedPath(Statuses_styles.CONTENT_URI, Long.toString(statuses_styles.getLong(0)))), 0));
-//						views.setTextViewText(map_screenname[count_status], statuses_styles.getString(1));
+						//						views.setTextViewText(map_screenname[count_status], statuses_styles.getString(1));
 						itemView.setTextViewText(R.id.friend, statuses_styles.getString(1));
-//						views.setTextColor(map_screenname[count_status], friend_color);
+						//						views.setTextColor(map_screenname[count_status], friend_color);
 						itemView.setTextColor(R.id.friend, friend_color);
-//						views.setFloat(map_screenname[count_status], "setTextSize", friend_textsize);
+						//						views.setFloat(map_screenname[count_status], "setTextSize", friend_textsize);
 						itemView.setFloat(R.id.friend, "setTextSize", friend_textsize);
-//						views.setTextViewText(map_created[count_status], statuses_styles.getString(4));
+						//						views.setTextViewText(map_created[count_status], statuses_styles.getString(4));
 						itemView.setTextViewText(R.id.created, statuses_styles.getString(4));
-//						views.setTextColor(map_created[count_status], created_color);
+						//						views.setTextColor(map_created[count_status], created_color);
 						itemView.setTextColor(R.id.created, created_color);
-//						views.setFloat(map_created[count_status], "setTextSize", created_textsize);
+						//						views.setFloat(map_created[count_status], "setTextSize", created_textsize);
 						itemView.setFloat(R.id.created, "setTextSize", created_textsize);
 						views.addView(R.id.messages, itemView);
 						count_status++;
@@ -2605,81 +2685,66 @@ public class SonetService extends Service {
 		case 1:
 			if (display_profile) {
 				replaceDummy.putExtra(LauncherIntent.Extra.Scroll.EXTRA_ITEM_LAYOUT_ID, R.layout.widget_item);
-				int[] cursorIndices = new int[12];
-				int[] viewTypes = new int[12];
-				int[] layoutIds = new int[12];
-				int[] defaultResource = new int[12];
-				boolean[] clickable = new boolean[12];
-				// R.id.friend_bg_clear
-				cursorIndices[0] = SonetProvider.StatusesStylesColumns.friend.ordinal();
-				viewTypes[0] = LauncherIntent.Extra.Scroll.Types.TEXTVIEW;
-				layoutIds[0] = R.id.friend_bg_clear;
-				defaultResource[0] = 0;
-				clickable[0] = false;
-				// R.id.message_bg_clear
-				cursorIndices[1] = SonetProvider.StatusesStylesColumns.message.ordinal();
-				viewTypes[1] = LauncherIntent.Extra.Scroll.Types.TEXTVIEW;
-				layoutIds[1] = R.id.message_bg_clear;
-				defaultResource[1] = 0;
-				clickable[1] = false;
-				// R.id.status_bg
-				cursorIndices[2] = SonetProvider.StatusesStylesColumns.status_bg.ordinal();
-				viewTypes[2] = LauncherIntent.Extra.Scroll.Types.IMAGEBLOB;
-				layoutIds[2] = R.id.status_bg;
-				defaultResource[2] = 0;
-				clickable[2] = true;
-				// R.id.profile
-				cursorIndices[3] = SonetProvider.StatusesStylesColumns.profile.ordinal();
-				viewTypes[3] = LauncherIntent.Extra.Scroll.Types.IMAGEBLOB;
-				layoutIds[3] = R.id.profile;
-				defaultResource[3] = 0;
-				clickable[3] = false;
-				// R.id.friend
-				cursorIndices[4] = SonetProvider.StatusesStylesColumns.friend.ordinal();
-				viewTypes[4] = LauncherIntent.Extra.Scroll.Types.TEXTVIEW;
-				layoutIds[4] = R.id.friend;
-				defaultResource[4] = 0;
-				clickable[4] = false;
-				// R.id.created
-				cursorIndices[5] = SonetProvider.StatusesStylesColumns.createdtext.ordinal();
-				viewTypes[5] = LauncherIntent.Extra.Scroll.Types.TEXTVIEW;
-				layoutIds[5] = R.id.created;
-				defaultResource[5] = 0;
-				clickable[5] = false;
-				// R.id.message
-				cursorIndices[6] = SonetProvider.StatusesStylesColumns.message.ordinal();
-				viewTypes[6] = LauncherIntent.Extra.Scroll.Types.TEXTVIEW;
-				layoutIds[6] = R.id.message;
-				defaultResource[6] = 0;
-				clickable[6] = false;
-				// R.id.icon
-				cursorIndices[7] = SonetProvider.StatusesStylesColumns.icon.ordinal();
-				viewTypes[7] = LauncherIntent.Extra.Scroll.Types.IMAGEBLOB;
-				layoutIds[7] = R.id.icon;
-				defaultResource[7] = 0;
-				clickable[7] = false;
-				// R.id.profile_bg
-				cursorIndices[8] = SonetProvider.StatusesStylesColumns.profile_bg.ordinal();
-				viewTypes[8] = LauncherIntent.Extra.Scroll.Types.IMAGEBLOB;
-				layoutIds[8] = R.id.profile_bg;
-				defaultResource[8] = 0;
-				clickable[8] = false;
-				// R.id.friende_bg
-				cursorIndices[9] = SonetProvider.StatusesStylesColumns.friend_bg.ordinal();
-				viewTypes[9] = LauncherIntent.Extra.Scroll.Types.IMAGEBLOB;
-				layoutIds[9] = R.id.friend_bg;
-				defaultResource[9] = 0;
-				clickable[9] = false;
-				cursorIndices[10] = SonetProvider.StatusesStylesColumns.image_bg.ordinal();
-				viewTypes[10] = LauncherIntent.Extra.Scroll.Types.IMAGEBLOB;
-				layoutIds[10] = R.id.image_clear;
-				defaultResource[10] = 0;
-				clickable[10] = false;
-				cursorIndices[11] = SonetProvider.StatusesStylesColumns.image.ordinal();
-				viewTypes[11] = LauncherIntent.Extra.Scroll.Types.IMAGEBLOB;
-				layoutIds[11] = R.id.image;
-				defaultResource[11] = 0;
-				clickable[11] = false;
+				int[] cursorIndices = new int[]{SonetProvider.StatusesStylesColumns.friend.ordinal(),
+						SonetProvider.StatusesStylesColumns.message.ordinal(),
+						SonetProvider.StatusesStylesColumns.status_bg.ordinal(),
+						SonetProvider.StatusesStylesColumns.profile.ordinal(),
+						SonetProvider.StatusesStylesColumns.friend.ordinal(),
+						SonetProvider.StatusesStylesColumns.createdtext.ordinal(),
+						SonetProvider.StatusesStylesColumns.message.ordinal(),
+						SonetProvider.StatusesStylesColumns.icon.ordinal(),
+						SonetProvider.StatusesStylesColumns.profile_bg.ordinal(),
+						SonetProvider.StatusesStylesColumns.friend_bg.ordinal(),
+						SonetProvider.StatusesStylesColumns.image_bg.ordinal(),
+						SonetProvider.StatusesStylesColumns.image.ordinal()};
+				int[] viewTypes = new int[]{LauncherIntent.Extra.Scroll.Types.TEXTVIEW,
+						LauncherIntent.Extra.Scroll.Types.TEXTVIEW,
+						LauncherIntent.Extra.Scroll.Types.IMAGEBLOB,
+						LauncherIntent.Extra.Scroll.Types.IMAGEBLOB,
+						LauncherIntent.Extra.Scroll.Types.TEXTVIEW,
+						LauncherIntent.Extra.Scroll.Types.TEXTVIEW,
+						LauncherIntent.Extra.Scroll.Types.TEXTVIEW,
+						LauncherIntent.Extra.Scroll.Types.IMAGEBLOB,
+						LauncherIntent.Extra.Scroll.Types.IMAGEBLOB,
+						LauncherIntent.Extra.Scroll.Types.IMAGEBLOB,
+						LauncherIntent.Extra.Scroll.Types.IMAGEBLOB,
+						LauncherIntent.Extra.Scroll.Types.IMAGEBLOB};
+				int[] layoutIds = new int[]{R.id.friend_bg_clear,
+						R.id.message_bg_clear,
+						R.id.status_bg,
+						R.id.profile,
+						R.id.friend,
+						R.id.created,
+						R.id.message,
+						R.id.icon,
+						R.id.profile_bg,
+						R.id.friend_bg,
+						R.id.image_clear,
+						R.id.image};
+				int[] defaultResource = new int[]{0,
+						0,
+						0,
+						0,
+						0,
+						0,
+						0,
+						0,
+						0,
+						0,
+						0,
+						0};
+				boolean[] clickable = new boolean[]{false,
+						false,
+						true,
+						false,
+						false,
+						false,
+						false,
+						false,
+						false,
+						false,
+						false,
+						false};
 				replaceDummy.putExtra(LauncherIntent.Extra.Scroll.Mapping.EXTRA_CURSOR_INDICES, cursorIndices);
 				replaceDummy.putExtra(LauncherIntent.Extra.Scroll.Mapping.EXTRA_VIEW_TYPES, viewTypes);
 				replaceDummy.putExtra(LauncherIntent.Extra.Scroll.Mapping.EXTRA_VIEW_IDS, layoutIds);
@@ -2687,69 +2752,56 @@ public class SonetService extends Service {
 				replaceDummy.putExtra(LauncherIntent.Extra.Scroll.Mapping.EXTRA_VIEW_CLICKABLE, clickable);			
 			} else {
 				replaceDummy.putExtra(LauncherIntent.Extra.Scroll.EXTRA_ITEM_LAYOUT_ID, R.layout.widget_item_noprofile);
-				int[] cursorIndices = new int[10];
-				int[] viewTypes = new int[10];
-				int[] layoutIds = new int[10];
-				int[] defaultResource = new int[10];
-				boolean[] clickable = new boolean[10];
-				// R.id.friend_bg_clear
-				cursorIndices[0] = SonetProvider.StatusesStylesColumnsNoProfile.friend.ordinal();
-				viewTypes[0] = LauncherIntent.Extra.Scroll.Types.TEXTVIEW;
-				layoutIds[0] = R.id.friend_bg_clear;
-				defaultResource[0] = 0;
-				clickable[0] = false;
-				// R.id.message_bg_clear
-				cursorIndices[1] = SonetProvider.StatusesStylesColumnsNoProfile.message.ordinal();
-				viewTypes[1] = LauncherIntent.Extra.Scroll.Types.TEXTVIEW;
-				layoutIds[1] = R.id.message_bg_clear;
-				defaultResource[1] = 0;
-				clickable[1] = false;
-				// R.id.status_bg
-				cursorIndices[2] = SonetProvider.StatusesStylesColumnsNoProfile.status_bg.ordinal();
-				viewTypes[2] = LauncherIntent.Extra.Scroll.Types.IMAGEBLOB;
-				layoutIds[2] = R.id.status_bg;
-				defaultResource[2] = 0;
-				clickable[2] = true;
-				// R.id.friend
-				cursorIndices[3] = SonetProvider.StatusesStylesColumnsNoProfile.friend.ordinal();
-				viewTypes[3] = LauncherIntent.Extra.Scroll.Types.TEXTVIEW;
-				layoutIds[3] = R.id.friend;
-				defaultResource[3] = 0;
-				clickable[3] = false;
-				// R.id.created
-				cursorIndices[4] = SonetProvider.StatusesStylesColumnsNoProfile.createdtext.ordinal();
-				viewTypes[4] = LauncherIntent.Extra.Scroll.Types.TEXTVIEW;
-				layoutIds[4] = R.id.created;
-				defaultResource[4] = 0;
-				clickable[4] = false;
-				// R.id.message
-				cursorIndices[5] = SonetProvider.StatusesStylesColumnsNoProfile.message.ordinal();
-				viewTypes[5] = LauncherIntent.Extra.Scroll.Types.TEXTVIEW;
-				layoutIds[5] = R.id.message;
-				defaultResource[5] = 0;
-				clickable[5] = false;
-				// R.id.icon
-				cursorIndices[6] = SonetProvider.StatusesStylesColumnsNoProfile.icon.ordinal();
-				viewTypes[6] = LauncherIntent.Extra.Scroll.Types.IMAGEBLOB;
-				layoutIds[6] = R.id.icon;
-				defaultResource[6] = 0;
-				clickable[6] = false;
-				// R.id.friend_bg
-				cursorIndices[7] = SonetProvider.StatusesStylesColumnsNoProfile.friend_bg.ordinal();
-				viewTypes[7] = LauncherIntent.Extra.Scroll.Types.IMAGEBLOB;
-				layoutIds[7] = R.id.friend_bg;
-				defaultResource[7] = 0;
-				clickable[7] = false;
-				cursorIndices[8] = SonetProvider.StatusesStylesColumns.image_bg.ordinal();
-				viewTypes[8] = LauncherIntent.Extra.Scroll.Types.IMAGEBLOB;
-				layoutIds[8] = R.id.image_clear;
-				defaultResource[8] = 0;
-				clickable[8] = false;
-				cursorIndices[9] = SonetProvider.StatusesStylesColumns.image.ordinal();
-				viewTypes[9] = LauncherIntent.Extra.Scroll.Types.IMAGEBLOB;
-				layoutIds[9] = R.id.image;
-				defaultResource[9] = 0;
-				clickable[9] = false;
+				int[] cursorIndices = new int[]{SonetProvider.StatusesStylesColumns.friend.ordinal(),
+						SonetProvider.StatusesStylesColumns.message.ordinal(),
+						SonetProvider.StatusesStylesColumns.status_bg.ordinal(),
+						SonetProvider.StatusesStylesColumns.friend.ordinal(),
+						SonetProvider.StatusesStylesColumns.createdtext.ordinal(),
+						SonetProvider.StatusesStylesColumns.message.ordinal(),
+						SonetProvider.StatusesStylesColumns.icon.ordinal(),
+						SonetProvider.StatusesStylesColumns.friend_bg.ordinal(),
+						SonetProvider.StatusesStylesColumns.image_bg.ordinal(),
+						SonetProvider.StatusesStylesColumns.image.ordinal()};
+				int[] viewTypes = new int[]{LauncherIntent.Extra.Scroll.Types.TEXTVIEW,
+						LauncherIntent.Extra.Scroll.Types.TEXTVIEW,
+						LauncherIntent.Extra.Scroll.Types.IMAGEBLOB,
+						LauncherIntent.Extra.Scroll.Types.TEXTVIEW,
+						LauncherIntent.Extra.Scroll.Types.TEXTVIEW,
+						LauncherIntent.Extra.Scroll.Types.TEXTVIEW,
+						LauncherIntent.Extra.Scroll.Types.IMAGEBLOB,
+						LauncherIntent.Extra.Scroll.Types.IMAGEBLOB,
+						LauncherIntent.Extra.Scroll.Types.IMAGEBLOB,
+						LauncherIntent.Extra.Scroll.Types.IMAGEBLOB};
+				int[] layoutIds = new int[]{R.id.friend_bg_clear,
+						R.id.message_bg_clear,
+						R.id.status_bg,
+						R.id.friend,
+						R.id.created,
+						R.id.message,
+						R.id.icon,
+						R.id.friend_bg,
+						R.id.image_clear,
+						R.id.image};
+				int[] defaultResource = new int[]{0,
+						0,
+						0,
+						0,
+						0,
+						0,
+						0,
+						0,
+						0,
+						0};
+				boolean[] clickable = new boolean[]{false,
+						false,
+						true,
+						false,
+						false,
+						false,
+						false,
+						false,
+						false,
+						false};
 				replaceDummy.putExtra(LauncherIntent.Extra.Scroll.Mapping.EXTRA_CURSOR_INDICES, cursorIndices);
 				replaceDummy.putExtra(LauncherIntent.Extra.Scroll.Mapping.EXTRA_VIEW_TYPES, viewTypes);
 				replaceDummy.putExtra(LauncherIntent.Extra.Scroll.Mapping.EXTRA_VIEW_IDS, layoutIds);

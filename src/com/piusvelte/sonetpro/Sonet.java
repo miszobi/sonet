@@ -173,8 +173,15 @@ public class Sonet {
 	protected static final String GOOGLEPLUS_ACTIVITIES = "%speople/%s/activities/%s?maxResults=%s&access_token=%s";
 	protected static final String GOOGLEPLUS_ACTIVITY = "%sactivities/%s?access_token=%s";
 	protected static final String GOOGLEPLUS_PROFILE = "https://plus.google.com/%s";
+	
+	protected static final int PINTEREST = 10;
+	protected static final String PINTEREST_BASE_URL = "https://api.pinterest.com/v2/";
+	protected static final String PINTEREST_URL_FEED = "%spopular/";
+	protected static final String PINTEREST_PIN = "https://pinterest.com/pin/%s/";
+	protected static final String PINTEREST_PROFILE = "https://pinterest.com/%s/";
+	protected static final String PINTEREST_DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss";
 
-	protected static final int CHATTER = 10;
+	protected static final int CHATTER = 11;
 	protected static final String CHATTER_URL_AUTHORIZE = "https://login.salesforce.com/services/oauth2/authorize?response_type=token&display=touch&client_id=%s&redirect_uri=%s";
 	protected static final String CHATTER_URL_ACCESS = "https://login.salesforce.com/services/oauth2/token?grant_type=refresh_token&client_id=%s&refresh_token=%s";
 	protected static final String CHATTER_URL_ME = "%s/services/data/v22.0/chatter/users/me";
@@ -199,7 +206,8 @@ public class Sonet {
 	+ Accounts.SERVICE + "=" + CHATTER + " then 'Chatter: ' when "
 	+ Accounts.SERVICE + "=" + RSS + " then 'RSS: ' when "
 	+ Accounts.SERVICE + "=" + IDENTICA + " then 'Identi.ca: ' when "
-	+ Accounts.SERVICE + "=" + GOOGLEPLUS + " then 'Google+: ' else '' end)||" + Accounts.USERNAME + " as " + Accounts.USERNAME;
+	+ Accounts.SERVICE + "=" + GOOGLEPLUS + " then 'Google+: ' when "
+	+ Accounts.SERVICE + "=" + PINTEREST + " then 'Pinterest: ' else '' end)||" + Accounts.USERNAME + " as " + Accounts.USERNAME;
 	
 	protected static final String Sid = "id";
 	protected static final String Sname = "name";
@@ -297,6 +305,11 @@ public class Sonet {
 	protected static final String Sfull_name = "full_name";
 	protected static final String Ssource = "source";
 	protected static final String Sstory = "story";
+	protected static final String Smobile = "mobile";
+	protected static final String Simage_url = "image_url";
+	protected static final String Scounts = "counts";
+	protected static final String Simages = "images";
+	protected static final String Susername = "username";
 	
 	private static final String POWER_SERVICE = Context.POWER_SERVICE;
 	private static WakeLock sWakeLock;

@@ -312,7 +312,8 @@ public class ManageAccounts extends ListActivity implements OnClickListener, Dia
 				+ Accounts.SERVICE + "=" + Sonet.CHATTER + " then 'Chatter: ' when "
 				+ Accounts.SERVICE + "=" + Sonet.RSS + " then 'RSS: ' when "
 				+ Accounts.SERVICE + "=" + Sonet.IDENTICA + " then 'Identi.ca: ' when "
-				+ Accounts.SERVICE + "=" + Sonet.GOOGLEPLUS + " then 'Google+: ' else '' end) as " + Statuses_styles.FRIEND,
+				+ Accounts.SERVICE + "=" + Sonet.GOOGLEPLUS + " then 'Google+: ' when "
+				+ Accounts.SERVICE + "=" + Sonet.PINTEREST + " then 'Pinterest: ' else '' end) as " + Statuses_styles.FRIEND,
 				
 				"(case when " + Accounts.SERVICE + "=" + Sonet.TWITTER + " then 'Twitter: ' when "
 				+ Accounts.SERVICE + "=" + Sonet.FACEBOOK + " then 'Facebook: ' when "
@@ -323,7 +324,8 @@ public class ManageAccounts extends ListActivity implements OnClickListener, Dia
 				+ Accounts.SERVICE + "=" + Sonet.CHATTER + " then 'Chatter: ' when "
 				+ Accounts.SERVICE + "=" + Sonet.RSS + " then 'RSS: ' when "
 				+ Accounts.SERVICE + "=" + Sonet.IDENTICA + " then 'Identi.ca: ' when "
-				+ Accounts.SERVICE + "=" + Sonet.GOOGLEPLUS + " then 'Google+: ' else '' end) as " + Statuses_styles.FRIEND + "2",
+				+ Accounts.SERVICE + "=" + Sonet.GOOGLEPLUS + " then 'Google+: ' when "
+				+ Accounts.SERVICE + "=" + Sonet.PINTEREST + " then 'Pinterest: ' else '' end) as " + Statuses_styles.FRIEND + "2",
 				
 				"(case when (select " + Widgets.DISPLAY_PROFILE + " from " + TABLE_WIDGETS + " where " + Widgets.WIDGET + "=" + mAppWidgetId + " and " + Widgets.ACCOUNT + "=" + TABLE_ACCOUNTS + "." + Accounts._ID + ") is not null then (select " + Widgets.DISPLAY_PROFILE + " from " + TABLE_WIDGETS + " where " + Widgets.WIDGET + "=" + mAppWidgetId + " and " + Widgets.ACCOUNT + "=" + TABLE_ACCOUNTS + "." + Accounts._ID + " limit 1)"
 				+ "when (select " + Widgets.DISPLAY_PROFILE + " from " + TABLE_WIDGETS + " where " + Widgets.WIDGET + "=" + mAppWidgetId + " and " + Widgets.ACCOUNT + "=-1) is not null then (select " + Widgets.DISPLAY_PROFILE + " from " + TABLE_WIDGETS + " where " + Widgets.WIDGET + "=" + mAppWidgetId + " and " + Widgets.ACCOUNT + "=-1 limit 1)"
