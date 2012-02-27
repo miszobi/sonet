@@ -34,6 +34,7 @@ import com.piusvelte.sonetpro.Sonet.Widgets_settings;
 
 import android.app.AlertDialog;
 import android.app.ListActivity;
+import android.app.WallpaperManager;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProviderInfo;
 import android.content.ComponentName;
@@ -45,6 +46,7 @@ import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Rect;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -80,6 +82,11 @@ public class About extends ListActivity implements DialogInterface.OnClickListen
 			adView.loadAd(new AdRequest());
 		}
 		registerForContextMenu(getListView());
+		
+		Drawable wp = WallpaperManager.getInstance(getApplicationContext()).getDrawable();
+		if (wp != null) {
+			findViewById(R.id.ad).getRootView().setBackgroundDrawable(wp);
+		}
 	}
 
 	@Override
@@ -171,7 +178,10 @@ public class About extends ListActivity implements DialogInterface.OnClickListen
 	@Override
 	protected void onPause() {
 		super.onPause();
-		if (mUpdateWidget) startService(new Intent(this, SonetService.class).putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, mAppWidgetIds));
+		if (mUpdateWidget) {
+			(Toast.makeText(getApplicationContext(), getString(R.string.refreshing), Toast.LENGTH_LONG)).show();
+			startService(new Intent(this, SonetService.class).putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, mAppWidgetIds));
+		}
 	}
 
 	@Override

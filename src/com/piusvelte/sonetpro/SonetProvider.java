@@ -739,7 +739,9 @@ public class SonetProvider extends ContentProvider {
 					+ ",s." + Statuses.FRIEND_BG + " as " + Statuses_styles.FRIEND_BG
 					+ ",i." + Status_images.IMAGE_BG + " as " + Statuses_styles.IMAGE_BG
 					+ ",i." + Status_images.IMAGE + " as " + Statuses_styles.IMAGE
-					+ " from " + TABLE_STATUSES + " s," + TABLE_ENTITIES + " e," + TABLE_WIDGETS + " a," + TABLE_WIDGETS + " b," + TABLE_WIDGETS + " c," + TABLE_STATUS_IMAGES + " i"
+					+ " from " + TABLE_STATUSES + " s," + TABLE_ENTITIES + " e," + TABLE_WIDGETS + " a," + TABLE_WIDGETS + " b," + TABLE_WIDGETS + " c"
+					+ " left join " + TABLE_STATUS_IMAGES + " i"
+					+ " on i." + Status_images.STATUS_ID + "=s." + Statuses._ID
 					+ " where "
 					+ "e." + Entities._ID + "=s." + Statuses.ENTITY
 					+ " and a." + Widgets.WIDGET + "=s." + Statuses.WIDGET
@@ -747,8 +749,7 @@ public class SonetProvider extends ContentProvider {
 					+ " and b." + Widgets.WIDGET + "=s." + Statuses.WIDGET
 					+ " and b." + Widgets.ACCOUNT + "=-1"
 					+ " and c." + Widgets.WIDGET + "=0"
-					+ " and c." + Widgets.ACCOUNT + "=-1"
-					+ " and i." + Status_images.STATUS_ID + "=s." + Statuses._ID + ";");
+					+ " and c." + Widgets.ACCOUNT + "=-1;");
 			// create a view for the widget settings
 			db.execSQL("create view if not exists " + VIEW_WIDGETS_SETTINGS + " as select a."
 					+ Widgets._ID + " as " + Widgets._ID
@@ -2135,7 +2136,9 @@ public class SonetProvider extends ContentProvider {
 						+ ",s." + Statuses.FRIEND_BG + " as " + Statuses_styles.FRIEND_BG
 						+ ",i." + Status_images.IMAGE_BG + " as " + Statuses_styles.IMAGE_BG
 						+ ",i." + Status_images.IMAGE + " as " + Statuses_styles.IMAGE
-						+ " from " + TABLE_STATUSES + " s," + TABLE_ENTITIES + " e," + TABLE_WIDGETS + " a," + TABLE_WIDGETS + " b," + TABLE_WIDGETS + " c," + TABLE_STATUS_IMAGES + " i"
+						+ " from " + TABLE_STATUSES + " s," + TABLE_ENTITIES + " e," + TABLE_WIDGETS + " a," + TABLE_WIDGETS + " b," + TABLE_WIDGETS + " c"
+						+ " left join " + TABLE_STATUS_IMAGES + " i"
+						+ " on i." + Status_images.STATUS_ID + "=s." + Statuses._ID
 						+ " where "
 						+ "e." + Entities._ID + "=s." + Statuses.ENTITY
 						+ " and a." + Widgets.WIDGET + "=s." + Statuses.WIDGET
@@ -2143,8 +2146,7 @@ public class SonetProvider extends ContentProvider {
 						+ " and b." + Widgets.WIDGET + "=s." + Statuses.WIDGET
 						+ " and b." + Widgets.ACCOUNT + "=-1"
 						+ " and c." + Widgets.WIDGET + "=0"
-						+ " and c." + Widgets.ACCOUNT + "=-1"
-						+ " and i." + Status_images.STATUS_ID + "=s." + Statuses._ID + ";");
+						+ " and c." + Widgets.ACCOUNT + "=-1;");
 			}
 		}
 

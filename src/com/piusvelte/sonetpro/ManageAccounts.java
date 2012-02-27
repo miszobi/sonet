@@ -112,7 +112,7 @@ public class ManageAccounts extends ListActivity implements OnClickListener, Dia
 		
 		Drawable wp = WallpaperManager.getInstance(getApplicationContext()).getDrawable();
 		if (wp != null) {
-			findViewById(R.id.save).getRootView().setBackgroundDrawable(wp);
+			findViewById(R.id.ad).getRootView().setBackgroundDrawable(wp);
 		}
 	}
 
@@ -281,11 +281,11 @@ public class ManageAccounts extends ListActivity implements OnClickListener, Dia
 
 	@Override
 	protected void onPause() {
+		super.onPause();
 		if (!mAddingAccount && mUpdateWidget) {
 			(Toast.makeText(getApplicationContext(), getString(R.string.refreshing), Toast.LENGTH_LONG)).show();
 			startService(new Intent(this, SonetService.class).setAction(ACTION_REFRESH).putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, new int[]{mAppWidgetId}));
 		}
-		super.onPause();
 	}
 
 	@Override
