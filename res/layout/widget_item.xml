@@ -48,6 +48,7 @@
         android:paddingBottom="4dip"
         android:paddingLeft="4dip"
         android:paddingRight="4dip"
+        android:text="@string/loading"
         android:textColor="#00000000" />
 
     <ImageView
@@ -84,7 +85,7 @@
         android:layout_above="@id/message_bg_clear"
         android:layout_toRightOf="@id/profile_bg"
         android:scaleType="fitXY" />
-
+    
     <ImageView
         android:id="@+id/status_bg"
         android:layout_width="fill_parent"
@@ -155,7 +156,7 @@
         android:id="@+id/icon"
         android:layout_width="16dip"
         android:layout_height="16dip"
-        android:layout_alignParentBottom="true"
+        android:layout_alignBottom="@id/message"
         android:layout_alignParentRight="true"
         android:paddingBottom="4dip"
         android:paddingRight="4dip" />

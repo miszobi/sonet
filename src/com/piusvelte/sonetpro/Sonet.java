@@ -76,7 +76,7 @@ public class Sonet {
 	protected static final String FACEBOOK_BASE_URL = "https://graph.facebook.com/";
 	protected static final String FACEBOOK_URL_AUTHORIZE = "%soauth/authorize?client_id=%s&scope=offline_access,read_stream,publish_stream,publish_checkins&type=user_agent&redirect_uri=%s&display=touch&sdk=android";
 	protected static final String FACEBOOK_URL_ME = "%sme?format=json&sdk=android&%s=%s";
-	protected static final String FACEBOOK_HOME = "%sme/home?date_format=U&format=json&sdk=android&%s=%s&fields=actions,link,type,from,message,created_time,to,comments,story,source";
+	protected static final String FACEBOOK_HOME = "%sme/home?date_format=U&format=json&sdk=android&%s=%s&fields=actions,link,type,from,message,created_time,to,comments,story,source,picture";
 	protected static final String FACEBOOK_POST = "%sme/feed?format=json&sdk=android&%s=%s";
 	protected static final String FACEBOOK_CHECKIN = "%sme/checkins?format=json&sdk=android&%s=%s";
 	protected static final String FACEBOOK_LIKES = "%s%s/likes?format=json&sdk=android&%s=%s";
@@ -310,6 +310,8 @@ public class Sonet {
 	protected static final String Scounts = "counts";
 	protected static final String Simages = "images";
 	protected static final String Susername = "username";
+	protected static final String Spicture = "picture";
+	protected static final String Sboard = "board";
 	
 	private static final String POWER_SERVICE = Context.POWER_SERVICE;
 	private static WakeLock sWakeLock;
