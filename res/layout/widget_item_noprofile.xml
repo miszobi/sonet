@@ -134,7 +134,7 @@
         android:id="@+id/icon"
         android:layout_width="16dip"
         android:layout_height="16dip"
-        android:layout_alignBottom="@id/message"
+        android:layout_alignBottom="@id/status_bg"
         android:layout_alignParentRight="true"
         android:paddingBottom="4dip"
         android:paddingRight="4dip" />

@@ -134,16 +134,16 @@ class SonetRemoteViewsFactory implements android.widget.RemoteViewsService.Remot
 			views.setFloat(R.id.created, "setTextSize", created_textsize);
 			byte[] image_bg = mCursor.getBlob(15);
 			if (image_bg != null) {
-				Bitmap imagebmp = BitmapFactory.decodeByteArray(image_bg, 0, image_bg.length, sBFOptions);
-				if (imagebmp != null) {
-					views.setImageViewBitmap(R.id.image_clear, imagebmp);
-				}
-			}
-			byte[] image = mCursor.getBlob(16);
-			if (image != null) {
-				Bitmap imagebmp = BitmapFactory.decodeByteArray(image, 0, image.length, sBFOptions);
-				if (imagebmp != null) {
-					views.setImageViewBitmap(R.id.image, imagebmp);
+				Bitmap image_bgbmp = BitmapFactory.decodeByteArray(image_bg, 0, image_bg.length, sBFOptions);
+				if (image_bgbmp != null) {
+					views.setImageViewBitmap(R.id.image_clear, image_bgbmp);
+					byte[] image = mCursor.getBlob(16);
+					if (image != null) {
+						Bitmap imagebmp = BitmapFactory.decodeByteArray(image, 0, image.length, sBFOptions);
+						if (imagebmp != null) {
+							views.setImageViewBitmap(R.id.image, imagebmp);
+						}
+					}
 				}
 			}
 			byte[] profile_bg = mCursor.getBlob(13);

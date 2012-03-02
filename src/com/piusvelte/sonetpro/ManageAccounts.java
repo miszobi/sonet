@@ -34,6 +34,7 @@ import com.google.ads.*;
 import com.piusvelte.sonetpro.Sonet.Accounts;
 import com.piusvelte.sonetpro.Sonet.Accounts_styles;
 import com.piusvelte.sonetpro.Sonet.Notifications;
+import com.piusvelte.sonetpro.Sonet.Status_images;
 import com.piusvelte.sonetpro.Sonet.Status_links;
 import com.piusvelte.sonetpro.Sonet.Statuses;
 import com.piusvelte.sonetpro.Sonet.Statuses_styles;
@@ -209,6 +210,15 @@ public class ManageAccounts extends ListActivity implements OnClickListener, Dia
 						// disable the account, remove settings and statuses
 						getContentResolver().delete(Widgets.CONTENT_URI, Widgets.ACCOUNT + "=? and " + Widgets.WIDGET + "=?", new String[]{Long.toString(id), Integer.toString(mAppWidgetId)});
 						getContentResolver().delete(Widget_accounts.CONTENT_URI, Widget_accounts.ACCOUNT + "=? and " + Widget_accounts.WIDGET + "=?", new String[]{Long.toString(id), Integer.toString(mAppWidgetId)});
+						Cursor statuses = getContentResolver().query(Statuses.CONTENT_URI, new String[]{Statuses._ID}, Statuses.ACCOUNT + "=? and " + Statuses.WIDGET + "=?", new String[]{Long.toString(id), Integer.toString(mAppWidgetId)}, null);
+						if (statuses.moveToFirst()) {
+							while (!statuses.isAfterLast()) {
+								getContentResolver().delete(Status_links.CONTENT_URI, Status_links.STATUS_ID + "=?", new String[]{Long.toString(statuses.getLong(0))});
+								getContentResolver().delete(Status_images.CONTENT_URI, Status_images.STATUS_ID + "=?", new String[]{Long.toString(statuses.getLong(0))});
+								statuses.moveToNext();
+							}
+						}
+						statuses.close();
 						getContentResolver().delete(Statuses.CONTENT_URI, Statuses.ACCOUNT + "=? and " + Statuses.WIDGET + "=?", new String[]{Long.toString(id), Integer.toString(mAppWidgetId)});
 						listAccounts();
 					} else {
@@ -246,6 +256,7 @@ public class ManageAccounts extends ListActivity implements OnClickListener, Dia
 			if (statuses.moveToFirst()) {
 				while (!statuses.isAfterLast()) {
 					getContentResolver().delete(Status_links.CONTENT_URI, Status_links.STATUS_ID + "=?", new String[]{Long.toString(statuses.getLong(0))});
+					getContentResolver().delete(Status_images.CONTENT_URI, Status_images.STATUS_ID + "=?", new String[]{Long.toString(statuses.getLong(0))});
 					statuses.moveToNext();
 				}
 			}
