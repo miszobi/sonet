@@ -929,19 +929,23 @@ public class SonetService extends Service {
 														}
 														if (statusObj.has(Slink)) {
 															links.add(new String[]{statusObj.getString(Stype), statusObj.getString(Slink)});
-															message.append("(");
-															message.append(statusObj.getString(Stype));
-															message.append(": ");
-															message.append(Uri.parse(statusObj.getString(Slink)).getHost());
-															message.append(")");
+															if (!statusObj.has(Spicture) || !statusObj.getString(Stype).equals(Sphoto)) {
+																message.append("(");
+																message.append(statusObj.getString(Stype));
+																message.append(": ");
+																message.append(Uri.parse(statusObj.getString(Slink)).getHost());
+																message.append(")");
+															}
 														}
 														if (statusObj.has(Ssource)) {
 															links.add(new String[]{statusObj.getString(Stype), statusObj.getString(Ssource)});
-															message.append("(");
-															message.append(statusObj.getString(Stype));
-															message.append(": ");
-															message.append(Uri.parse(statusObj.getString(Ssource)).getHost());
-															message.append(")");
+															if (!statusObj.has(Spicture) || !statusObj.getString(Stype).equals(Sphoto)) {
+																message.append("(");
+																message.append(statusObj.getString(Stype));
+																message.append(": ");
+																message.append(Uri.parse(statusObj.getString(Ssource)).getHost());
+																message.append(")");
+															}
 														}
 														long date = statusObj.getLong(Screated_time) * 1000;
 														String notification = null;
@@ -2226,6 +2230,7 @@ public class SonetService extends Service {
 				linkValues.put(Status_links.LINK_URI, s[1]);
 				getContentResolver().insert(Status_links.CONTENT_URI, linkValues);
 			}
+			boolean insertEmptyImage = true;
 			if (imageUrl != null) {
 				byte[] image = null;
 				if (url != null) {
@@ -2235,30 +2240,31 @@ public class SonetService extends Service {
 				if (image != null) {
 					Bitmap imageBmp = BitmapFactory.decodeByteArray(image, 0, image.length, sBFOptions);
 					if (imageBmp != null) {
+						int scaledWidth = 192;
+						int scaledHeight = 144;
 						Bitmap scaledImageBmp = null;
 						Bitmap croppedBmp = null;
 						int width = imageBmp.getWidth();
 						int height = imageBmp.getHeight();
-						// 4 x 3 => 128 x 96
-						int targetSize = (int) Math.round(width * 0.75);
+						long targetSize = Math.round(width * 0.75);
 						if (height > targetSize) {
 							// center crop the height
-							targetSize = Math.round(targetSize / 2);
-							croppedBmp = Bitmap.createBitmap(imageBmp, 0, targetSize, width, height - targetSize);
+							targetSize = Math.round(targetSize / 2.0);
+							croppedBmp = Bitmap.createBitmap(imageBmp, 0, (int) targetSize, width, height - (int) targetSize);
 						} else {
-							targetSize = (int) Math.round(height * (4.0/3));
+							targetSize = Math.round(height * (4.0/3));
 							if (width > targetSize) {
 								// center crop the width
-								targetSize = Math.round(targetSize / 2);
-								croppedBmp = Bitmap.createBitmap(imageBmp, targetSize, 0, width - targetSize, height);
+								targetSize = Math.round(targetSize / 2.0);
+								croppedBmp = Bitmap.createBitmap(imageBmp, (int) targetSize, 0, width - (int) targetSize, height);
 							}
 						}
 						if (croppedBmp != null) {
-							scaledImageBmp = Bitmap.createScaledBitmap(croppedBmp, 128, 96, true);
+							scaledImageBmp = Bitmap.createScaledBitmap(croppedBmp, scaledWidth, scaledHeight, true);
 							croppedBmp.recycle();
 							croppedBmp = null;
 						} else {
-							scaledImageBmp = Bitmap.createScaledBitmap(imageBmp, 128, 96, true);
+							scaledImageBmp = Bitmap.createScaledBitmap(imageBmp, scaledWidth, scaledHeight, true);
 						}
 						imageBmp.recycle();
 						imageBmp = null;
@@ -2269,7 +2275,7 @@ public class SonetService extends Service {
 							scaledImageBmp.recycle();
 							scaledImageBmp = null;
 							if (image != null) {
-								Bitmap imageBgBmp = Bitmap.createBitmap(1, 96, Config.ARGB_8888);
+								Bitmap imageBgBmp = Bitmap.createBitmap(1, scaledHeight, Config.ARGB_8888);
 								ByteArrayOutputStream imageBgStream = new ByteArrayOutputStream();
 								imageBgBmp.compress(Bitmap.CompressFormat.PNG, 100, imageBgStream);
 								byte[] imageBg = imageBgStream.toByteArray();
@@ -2281,10 +2287,27 @@ public class SonetService extends Service {
 									imageValues.put(Status_images.IMAGE, image);
 									imageValues.put(Status_images.IMAGE_BG, imageBg);
 									getContentResolver().insert(Status_images.CONTENT_URI, imageValues);
+									insertEmptyImage = false;
 								}
 							}
 						}
 					}
+				}
+			}
+			// remote views can be reused, avoid images being repeated across multiple statuses
+			if (insertEmptyImage) {
+				Bitmap emptyBmp = Bitmap.createBitmap(1, 1, Config.ARGB_8888);
+				ByteArrayOutputStream imageBgStream = new ByteArrayOutputStream();
+				emptyBmp.compress(Bitmap.CompressFormat.PNG, 100, imageBgStream);
+				byte[] emptyImg = imageBgStream.toByteArray();
+				emptyBmp.recycle();
+				emptyBmp = null;
+				if (emptyImg != null) {
+					ContentValues imageValues = new ContentValues();
+					imageValues.put(Status_images.STATUS_ID, statusId);
+					imageValues.put(Status_images.IMAGE, emptyImg);
+					imageValues.put(Status_images.IMAGE_BG, emptyImg);
+					getContentResolver().insert(Status_images.CONTENT_URI, imageValues);
 				}
 			}
 		}
