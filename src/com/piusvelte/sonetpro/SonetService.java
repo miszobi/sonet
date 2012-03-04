@@ -2186,27 +2186,29 @@ public class SonetService extends Service {
 			// update the account statuses
 
 			// parse any links
-			if ((service != TWITTER) && (service != IDENTICA)) {
-				Matcher m = Pattern.compile("\\bhttp(s)?://\\S+\\b", Pattern.CASE_INSENSITIVE).matcher(message);
-				StringBuffer sb = new StringBuffer(message.length());
-				while (m.find()) {
-					String link = m.group();
-					// check existing links before adding
-					boolean exists = false;
-					for (String[] l : links) {
-						if (l[1].equals(link)) {
-							exists = true;
-							break;
-						}
+//			if ((service != TWITTER) && (service != IDENTICA)) {
+			Matcher m = Pattern.compile("\\bhttp(s)?://\\S+\\b", Pattern.CASE_INSENSITIVE).matcher(message);
+			StringBuffer sb = new StringBuffer(message.length());
+			while (m.find()) {
+				String link = m.group();
+				// check existing links before adding
+				boolean exists = false;
+				for (String[] l : links) {
+					if (l[1].equals(link)) {
+						exists = true;
+						break;
 					}
-					if (!exists) {
-						links.add(new String[]{Slink, link});
+				}
+				if (!exists) {
+					links.add(new String[]{Slink, link});
+					if ((service != TWITTER) && (service != IDENTICA)) {
 						m.appendReplacement(sb, "(" + Slink + ": " + Uri.parse(link).getHost() + ")");
 					}
 				}
-				m.appendTail(sb);
-				message = sb.toString();
 			}
+			m.appendTail(sb);
+			message = sb.toString();
+//			}
 			ContentValues values = new ContentValues();
 			values.put(Statuses.CREATED, created);
 			values.put(Statuses.ENTITY, id);
@@ -2221,8 +2223,11 @@ public class SonetService extends Service {
 			String imageUrl = null;
 			for (String[] s : links) {
 				// get the first photo
-				if ((imageUrl == null) && (((service == FACEBOOK) && (s[0].equals(Spicture))) || ((service == PINTEREST) && (s[0].equals(Simage))))) {
-					imageUrl = s[1];
+				if (imageUrl == null) {
+					Uri uri = Uri.parse(s[1]);
+					if (((service == FACEBOOK) && (s[0].equals(Spicture))) || ((service == PINTEREST) && (s[0].equals(Simage))) || ((uri != null) && uri.getHost().equals(Simgur))) {
+						imageUrl = s[1];
+					}
 				}
 				ContentValues linkValues = new ContentValues();
 				linkValues.put(Status_links.STATUS_ID, statusId);
@@ -2240,23 +2245,39 @@ public class SonetService extends Service {
 				if (image != null) {
 					Bitmap imageBmp = BitmapFactory.decodeByteArray(image, 0, image.length, sBFOptions);
 					if (imageBmp != null) {
-						int scaledWidth = 192;
-						int scaledHeight = 144;
 						Bitmap scaledImageBmp = null;
 						Bitmap croppedBmp = null;
 						int width = imageBmp.getWidth();
 						int height = imageBmp.getHeight();
-						long targetSize = Math.round(width * 0.75);
+						// default to landscape
+						int scaledWidth;
+						int scaledHeight;
+						double targetHeightRatio;
+						double targetWidthRatio;
+						if (width > height) {
+							//landscape
+							scaledWidth = 192;
+							scaledHeight = 144;
+							targetHeightRatio = 0.75;
+							targetWidthRatio = 4.0 / 3;
+						} else {
+							//portrait
+							scaledWidth = 144;
+							scaledHeight = 192;
+							targetHeightRatio = 4.0 / 3;
+							targetWidthRatio = 0.75;
+						}
+						int targetSize = (int) Math.round(width * targetHeightRatio);
 						if (height > targetSize) {
 							// center crop the height
-							targetSize = Math.round(targetSize / 2.0);
-							croppedBmp = Bitmap.createBitmap(imageBmp, 0, (int) targetSize, width, height - (int) targetSize);
+							targetSize = (int) Math.round((height - targetSize) / 2.0);
+							croppedBmp = Bitmap.createBitmap(imageBmp, 0, targetSize, width, height - targetSize);
 						} else {
-							targetSize = Math.round(height * (4.0/3));
+							targetSize = (int) Math.round(height * targetWidthRatio);
 							if (width > targetSize) {
 								// center crop the width
-								targetSize = Math.round(targetSize / 2.0);
-								croppedBmp = Bitmap.createBitmap(imageBmp, (int) targetSize, 0, width - (int) targetSize, height);
+								targetSize = (int) Math.round((width - targetSize) / 2.0);
+								croppedBmp = Bitmap.createBitmap(imageBmp, targetSize, 0, width - targetSize, height);
 							}
 						}
 						if (croppedBmp != null) {

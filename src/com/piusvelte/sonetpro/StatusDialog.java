@@ -781,15 +781,16 @@ public class StatusDialog extends Activity implements DialogInterface.OnClickLis
 						phones.close();
 					} else if (mService != RSS) {
 						mServiceName = getResources().getStringArray(R.array.service_entries)[mService];
-						// parse any links
-						Matcher m = Sonet.getLinksMatcher(c.getString(4));
-						int count = 0;
-						while (m.find()) {
-							count++;
-						}
+//						// parse any links
+//						Matcher m = Sonet.getLinksMatcher(c.getString(4));
+//						int count = 0;
+//						while (m.find()) {
+//							count++;
+//						}
 						// get links from table
 						Cursor links = getContentResolver().query(Status_links.CONTENT_URI, new String[]{Status_links.LINK_URI, Status_links.LINK_TYPE}, Status_links.STATUS_ID + "=?", new String[]{Long.toString(c.getLong(0))}, null);
-						count += links.getCount();
+//						count += links.getCount();
+						int count = links.getCount();
 						items = new String[PROFILE + count + 1];
 						// for facebook wall posts, remove everything after the " > "
 						String friend = c.getString(5);
@@ -811,10 +812,10 @@ public class StatusDialog extends Activity implements DialogInterface.OnClickLis
 						items[REFRESH] = getString(R.string.button_refresh);
 						items[PROFILE] = String.format(getString(R.string.userProfile), friend);
 						count = PROFILE + 1;
-						m.reset();
-						while (m.find()) {
-							items[count++] = m.group();
-						}
+//						m.reset();
+//						while (m.find()) {
+//							items[count++] = m.group();
+//						}
 						// links
 						if (links.moveToFirst()) {
 							while (!links.isAfterLast()) {

@@ -312,6 +312,7 @@ public class Sonet {
 	protected static final String Susername = "username";
 	protected static final String Spicture = "picture";
 	protected static final String Sboard = "board";
+	protected static final String Simgur = "i.imgur.com";
 	
 	private static final String POWER_SERVICE = Context.POWER_SERVICE;
 	private static WakeLock sWakeLock;
