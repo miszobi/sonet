@@ -550,7 +550,8 @@ public class SonetService extends Service {
 									awm.getAppWidgetIds(new ComponentName(getApplicationContext(),
 											SonetWidget_4x4.class)));
 			for (int appWidgetId : appWidgetIds) {
-				if (Sonet.arrayContains(awi, appWidgetId)) {
+				// About.java will send an invalid appwidget id
+				if ((appWidgetId == AppWidgetManager.INVALID_APPWIDGET_ID) || Sonet.arrayContains(awi, appWidgetId)) {
 					putNewUpdate(appWidgetId, reload);
 				} else {
 					getContentResolver().delete(Widgets.CONTENT_URI, Widgets.WIDGET + "=?", new String[] { Integer.toString(appWidgetId) });
@@ -635,6 +636,7 @@ public class SonetService extends Service {
 			final int appWidgetId = params[0];
 			final String widget = Integer.toString(appWidgetId);
 			final boolean reload = params[1] != 0;
+			Log.d(TAG,"StatusesLoader;widget:"+widget+",reload:"+reload);
 			// the widget will start out as the default widget.xml, which simply says "loading..."
 			// if there's a cache, that should be quickly reloaded while new updates come down
 			// otherwise, replace the widget with "loading..."
@@ -645,14 +647,16 @@ public class SonetService extends Service {
 			statuses.close();
 			if (!hasCache) {
 				// if there's a cache, let it remain out there, otherwise inform the user that the widget is loading
-				addStatusItem(System.currentTimeMillis(), "", null, getString(R.string.loading), 0, false, appWidgetId, Sonet.INVALID_ACCOUNT_ID, "-1", "-1", new ArrayList<String[]>());
+				addStatusItem(getString(R.string.loading), appWidgetId);
 			}
 			// loading takes time, so don't leave an empty widget sitting there
 			if (appWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
 				// build the widget
+				Log.d(TAG,"temp widget build");
 				buildWidgetButtons(appWidgetId, false, 0);
 			} else {
 				// update the About.java for in-app viewing
+				Log.d(TAG,"temp About build");
 				getContentResolver().notifyChange(Statuses_styles.CONTENT_URI, null);
 			}
 			int refreshInterval = Sonet.default_interval;
@@ -708,6 +712,7 @@ public class SonetService extends Service {
 						final String token = mSonetCrypto.Decrypt(accounts.getString(1));
 						final String secret = mSonetCrypto.Decrypt(accounts.getString(2));
 						final String accountEsid = mSonetCrypto.Decrypt(accounts.getString(4));
+						Log.d(TAG,"widget:"+widget+",account:"+account);
 						// get the settings form time24hr and bg_color
 						boolean time24hr = false;
 						int status_bg_color = Sonet.default_message_bg_color;
@@ -1930,44 +1935,14 @@ public class SonetService extends Service {
 							}
 						}
 						// update the bg and icon
-						byte[] bg;
 						// create the status_bg
-						Bitmap bg_bmp = Bitmap.createBitmap(1, 1, Config.ARGB_8888);
-						Canvas bg_canvas = new Canvas(bg_bmp);
-						bg_canvas.drawColor(status_bg_color);
-						ByteArrayOutputStream bg_blob = new ByteArrayOutputStream();
-						bg_bmp.compress(Bitmap.CompressFormat.PNG, 100, bg_blob);
-						bg = bg_blob.toByteArray();
 						ContentValues values = new ContentValues();
-						values.put(Statuses.STATUS_BG, bg);
-						if (bg_bmp != null) {
-							bg_bmp.recycle();
-							bg_bmp = null;
-						}
+						values.put(Statuses.STATUS_BG, createBackground(status_bg_color));
 						// friend_bg
-						bg_bmp = Bitmap.createBitmap(1, 1, Config.ARGB_8888);
-						bg_canvas = new Canvas(bg_bmp);
-						bg_canvas.drawColor(friend_bg_color);
-						bg_blob = new ByteArrayOutputStream();
-						bg_bmp.compress(Bitmap.CompressFormat.PNG, 100, bg_blob);
-						bg = bg_blob.toByteArray();
-						values.put(Statuses.FRIEND_BG, bg);
-						if (bg_bmp != null) {
-							bg_bmp.recycle();
-							bg_bmp = null;
-						}
+						values.put(Statuses.FRIEND_BG, createBackground(friend_bg_color));
 						// profile_bg
-						bg_bmp = Bitmap.createBitmap(1, 1, Config.ARGB_8888);
-						bg_canvas = new Canvas(bg_bmp);
-						bg_canvas.drawColor(profile_bg_color);
-						bg_blob = new ByteArrayOutputStream();
-						bg_bmp.compress(Bitmap.CompressFormat.PNG, 100, bg_blob);
-						bg = bg_blob.toByteArray();
-						values.put(Statuses.PROFILE_BG, bg);
-						if (bg_bmp != null) {
-							bg_bmp.recycle();
-							bg_bmp = null;
-						}
+						values.put(Statuses.PROFILE_BG, createBackground(profile_bg_color));
+						// icon
 						values.put(Statuses.ICON, icon ? getBlob(getResources(), map_icons[service]) : null);
 						SonetService.this.getContentResolver().update(Statuses.CONTENT_URI, values, Statuses.WIDGET + "=? and " + Statuses.SERVICE + "=? and " + Statuses.ACCOUNT + "=?", new String[]{widget, Integer.toString(service), Long.toString(account)});
 						accounts.moveToNext();
@@ -1985,21 +1960,24 @@ public class SonetService extends Service {
 				if (!hasCache) {
 					// there should be a loading message displaying
 					// if no updates have been loaded, display "no updates"
-					addStatusItem(System.currentTimeMillis(), "", null, getString(R.string.no_updates), 0, false, appWidgetId, Sonet.INVALID_ACCOUNT_ID, "-1", "-1", new ArrayList<String[]>());
+					addStatusItem(getString(R.string.no_updates), appWidgetId);
 				}
 			} else {
+				Log.d(TAG,"no accounts");
 				// no accounts, clear cache
 				getContentResolver().delete(Statuses.CONTENT_URI, Statuses.WIDGET + "=?", new String[]{widget});
 				// insert no accounts message
-				addStatusItem(System.currentTimeMillis(), "", null, getString(R.string.no_accounts), 0, false, appWidgetId, Sonet.INVALID_ACCOUNT_ID, "-1", "-1", new ArrayList<String[]>());
+				addStatusItem(getString(R.string.no_accounts), appWidgetId);
 			}
 			accounts.close();
 			// always update buttons, if !scrollable update widget both times, otherwise build scrollable first, requery second
 			// see if the tasks are finished
 			// non-scrollable widgets will be completely rebuilt, while scrollable widgets while be notified to requery
 			if (appWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) {
+				Log.d(TAG,"full widget build");
 				buildWidgetButtons(appWidgetId, true, 0);
 			} else {
+				Log.d(TAG,"full About build");
 				// notify change to About.java
 				getContentResolver().notifyChange(Statuses_styles.CONTENT_URI, null);
 			}
@@ -2032,6 +2010,20 @@ public class SonetService extends Service {
 			} else {
 				processUpdates(SonetService.this);
 			}
+		}
+		
+		private byte[] createBackground(int color) {
+			Bitmap b = Bitmap.createBitmap(1, 1, Config.ARGB_8888);
+			Canvas c = new Canvas(b);
+			c.drawColor(color);
+			ByteArrayOutputStream s = new ByteArrayOutputStream();
+			b.compress(Bitmap.CompressFormat.PNG, 100, s);
+			byte[] bg = s.toByteArray();
+			if (b != null) {
+				b.recycle();
+				b = null;
+			}
+			return bg;
 		}
 
 		private void processRss(String response, String widget, long account, int status_count, ArrayList<String[]> links, boolean display_profile, int service, boolean time24hr, int appWidgetId) {
@@ -2145,6 +2137,57 @@ public class SonetService extends Service {
 				}
 			}
 			entities.close();
+		}
+		private void addStatusItem(String message, int appWidgetId) {
+			long id;
+			long created = System.currentTimeMillis();
+			int service = 0;
+			boolean time24hr = false;
+			long accountId = Sonet.INVALID_ACCOUNT_ID;
+			String sid = "-1";
+			String esid = "-1";
+			String friend = "";
+			byte[] profile = getBlob(getResources(), R.drawable.ic_contact_picture);
+			Cursor entity = getContentResolver().query(Entities.CONTENT_URI, new String[]{Entities._ID}, Entities.ACCOUNT + "=? and " + Entities.ESID + "=?", new String[]{Long.toString(accountId), mSonetCrypto.Encrypt(esid)}, null);
+			if (entity.moveToFirst()) {
+				id = entity.getLong(0);
+			} else {
+				ContentValues entityValues = new ContentValues();
+				entityValues.put(Entities.ESID, esid);
+				entityValues.put(Entities.FRIEND, friend);
+				entityValues.put(Entities.PROFILE, profile);
+				entityValues.put(Entities.ACCOUNT, accountId);
+				id = Long.parseLong(getContentResolver().insert(Entities.CONTENT_URI, entityValues).getLastPathSegment());
+			}
+			entity.close();
+			ContentValues values = new ContentValues();
+			values.put(Statuses.CREATED, created);
+			values.put(Statuses.ENTITY, id);
+			values.put(Statuses.MESSAGE, message);
+			values.put(Statuses.SERVICE, service);
+			values.put(Statuses.CREATEDTEXT, Sonet.getCreatedText(created, time24hr));
+			values.put(Statuses.WIDGET, appWidgetId);
+			values.put(Statuses.ACCOUNT, accountId);
+			values.put(Statuses.SID, sid);
+			values.put(Statuses.FRIEND_OVERRIDE, friend);
+			values.put(Statuses.STATUS_BG, createBackground(Sonet.default_message_bg_color));
+			values.put(Statuses.FRIEND_BG, createBackground(Sonet.default_friend_bg_color));
+			values.put(Statuses.PROFILE_BG, createBackground(Sonet.default_message_bg_color));
+			long statusId = Long.parseLong(getContentResolver().insert(Statuses.CONTENT_URI, values).getLastPathSegment());
+			// remote views can be reused, avoid images being repeated across multiple statuses
+			Bitmap emptyBmp = Bitmap.createBitmap(1, 1, Config.ARGB_8888);
+			ByteArrayOutputStream imageBgStream = new ByteArrayOutputStream();
+			emptyBmp.compress(Bitmap.CompressFormat.PNG, 100, imageBgStream);
+			byte[] emptyImg = imageBgStream.toByteArray();
+			emptyBmp.recycle();
+			emptyBmp = null;
+			if (emptyImg != null) {
+				ContentValues imageValues = new ContentValues();
+				imageValues.put(Status_images.STATUS_ID, statusId);
+				imageValues.put(Status_images.IMAGE, emptyImg);
+				imageValues.put(Status_images.IMAGE_BG, emptyImg);
+				getContentResolver().insert(Status_images.CONTENT_URI, imageValues);
+			}
 		}
 
 		private void addStatusItem(long created, String friend, String url, String message, int service, boolean time24hr, int appWidgetId, long accountId, String sid, String esid, ArrayList<String[]> links) {
@@ -2693,6 +2736,7 @@ public class SonetService extends Service {
 				mgr.updateAppWidget(appWidgetId, views);
 			}
 		} else if (updatesReady) {
+			Log.d(TAG, "notify updatesReady");
 			getContentResolver().notifyChange(Statuses_styles.CONTENT_URI, null);
 		} else {
 			AppWidgetManager.getInstance(SonetService.this).updateAppWidget(Integer.parseInt(widget), views);
