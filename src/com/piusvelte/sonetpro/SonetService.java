@@ -195,7 +195,7 @@ public class SonetService extends Service {
 								protected void onPostExecute(String filepath) {
 									// launch post activity with filepath
 									if (filepath != null) {
-										startActivity(new Intent(getApplicationContext(), SonetUploadDialog.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK).putExtra(Widgets.INSTANT_UPLOAD, filepath));
+										startActivity(new Intent(getApplicationContext(), StatusDialog.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK).addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP).putExtra(Widgets.INSTANT_UPLOAD, filepath));
 									}
 								}
 
@@ -689,6 +689,7 @@ public class SonetService extends Service {
 			}
 			settings.close();
 			// the alarm should always be set, rather than depend on the tasks to complete
+			Log.d(TAG,"set alarm;awi:"+appWidgetId+",hasCache:"+hasCache+",reload:"+reload+",refreshInterval:"+refreshInterval);
 			if ((appWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) && (!hasCache || reload) && (refreshInterval > 0)) {
 				mAlarmManager.cancel(PendingIntent.getService(SonetService.this, 0, new Intent(SonetService.this, SonetService.class).setAction(widget), 0));
 				mAlarmManager.set(backgroundUpdate ? AlarmManager.RTC_WAKEUP : AlarmManager.RTC, System.currentTimeMillis() + refreshInterval, PendingIntent.getService(SonetService.this, 0, new Intent(SonetService.this, SonetService.class).setData(Uri.withAppendedPath(Widgets.CONTENT_URI, widget)).setAction(ACTION_REFRESH), 0));

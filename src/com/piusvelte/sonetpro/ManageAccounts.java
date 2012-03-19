@@ -78,6 +78,7 @@ public class ManageAccounts extends ListActivity implements OnClickListener, Dia
 	private int mAppWidgetId = AppWidgetManager.INVALID_APPWIDGET_ID;
 	private boolean mAddingAccount,
 	mUpdateWidget = false;
+	private AlertDialog mDialog;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -183,8 +184,8 @@ public class ManageAccounts extends ListActivity implements OnClickListener, Dia
 	protected void onListItemClick(ListView list, final View view, int position, final long id) {
 		super.onListItemClick(list, view, position, id);
 		final CharSequence[] items = {getString(R.string.re_authenticate), getString(R.string.account_settings), getString(((TextView) view.findViewById(R.id.message)).getText().toString().contains("enabled") ? R.string.disable : R.string.enable)};
-		AlertDialog.Builder dialog = new AlertDialog.Builder(this);
-		dialog.setItems(items, new DialogInterface.OnClickListener() {
+		mDialog = (new AlertDialog.Builder(this))
+		.setItems(items, new DialogInterface.OnClickListener() {
 			@Override
 			public void onClick(DialogInterface dialog, int which) {
 				which++; //fix indexing
@@ -235,7 +236,9 @@ public class ManageAccounts extends ListActivity implements OnClickListener, Dia
 				}
 				dialog.cancel();
 			}
-		}).show();
+		})
+		.create();
+		mDialog.show();
 	}
 
 	@Override
@@ -272,9 +275,10 @@ public class ManageAccounts extends ListActivity implements OnClickListener, Dia
 		if (v.getId() == R.id.button_add_account) {
 			// add a new account
 			String[] services = getResources().getStringArray(R.array.service_entries);
-			(new AlertDialog.Builder(this))
+			mDialog = (new AlertDialog.Builder(this))
 			.setItems(services, this)
-			.show();
+			.create();
+			mDialog.show();
 		} else if (v.getId() == R.id.default_widget_settings) {
 			mAddingAccount = true;
 			startActivityForResult(new Intent(this, Settings.class).putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, mAppWidgetId), RESULT_REFRESH);
@@ -296,6 +300,9 @@ public class ManageAccounts extends ListActivity implements OnClickListener, Dia
 		if (!mAddingAccount && mUpdateWidget) {
 			(Toast.makeText(getApplicationContext(), getString(R.string.refreshing), Toast.LENGTH_LONG)).show();
 			startService(new Intent(this, SonetService.class).setAction(ACTION_REFRESH).putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, new int[]{mAppWidgetId}));
+		}
+		if ((mDialog != null) && mDialog.isShowing()) {
+			mDialog.dismiss();
 		}
 	}
 

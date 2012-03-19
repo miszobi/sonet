@@ -98,6 +98,7 @@ public class SonetCreatePost extends Activity implements OnKeyListener, OnClickL
 	private static final int PHOTO = 1;
 	private String mPhotoPath;
 	private SonetHttpClient mSonetHttpClient;
+	private AlertDialog mDialog;
 
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
@@ -167,6 +168,14 @@ public class SonetCreatePost extends Activity implements OnKeyListener, OnClickL
 
 		setResult(RESULT_OK);
 	}
+	
+	@Override
+	protected void onPause() {
+		super.onPause();
+		if ((mDialog != null) && mDialog.isShowing()) {
+			mDialog.dismiss();
+		}
+	}
 
 	private void setLocation(final long accountId) {
 		final ProgressDialog loadingDialog = new ProgressDialog(this);
@@ -211,8 +220,8 @@ public class SonetCreatePost extends Activity implements OnKeyListener, OnClickL
 								placesNames[i] = place.getString(Sfull_name);
 								placesIds[i] = place.getString(Sid);
 							}
-							AlertDialog.Builder dialog = new AlertDialog.Builder(SonetCreatePost.this);
-							dialog.setSingleChoiceItems(placesNames, -1, new DialogInterface.OnClickListener() {
+							mDialog = (new AlertDialog.Builder(SonetCreatePost.this))
+							.setSingleChoiceItems(placesNames, -1, new DialogInterface.OnClickListener() {
 								@Override
 								public void onClick(DialogInterface dialog, int which) {
 									mAccountsToPost.put(accountId, placesIds[which]);
@@ -225,7 +234,8 @@ public class SonetCreatePost extends Activity implements OnKeyListener, OnClickL
 									dialog.cancel();
 								}
 							})
-							.show();
+							.create();
+							mDialog.show();
 						} catch (JSONException e) {
 							Log.e(TAG, e.toString());
 						}
@@ -240,8 +250,8 @@ public class SonetCreatePost extends Activity implements OnKeyListener, OnClickL
 								placesNames[i] = place.getString(Sname);
 								placesIds[i] = place.getString(Sid);
 							}
-							AlertDialog.Builder dialog = new AlertDialog.Builder(SonetCreatePost.this);
-							dialog.setSingleChoiceItems(placesNames, -1, new DialogInterface.OnClickListener() {
+							mDialog = (new AlertDialog.Builder(SonetCreatePost.this))
+							.setSingleChoiceItems(placesNames, -1, new DialogInterface.OnClickListener() {
 								@Override
 								public void onClick(DialogInterface dialog, int which) {
 									mAccountsToPost.put(accountId, placesIds[which]);
@@ -254,7 +264,8 @@ public class SonetCreatePost extends Activity implements OnKeyListener, OnClickL
 									dialog.cancel();
 								}
 							})
-							.show();
+							.create();
+							mDialog.show();
 						} catch (JSONException e) {
 							Log.e(TAG, e.toString());
 						}
@@ -273,8 +284,8 @@ public class SonetCreatePost extends Activity implements OnKeyListener, OnClickL
 										placesNames[i] = place.getString(Sname);
 										placesIds[i] = place.getString(Sid);
 									}
-									AlertDialog.Builder dialog = new AlertDialog.Builder(SonetCreatePost.this);
-									dialog.setSingleChoiceItems(placesNames, -1, new DialogInterface.OnClickListener() {
+									mDialog = (new AlertDialog.Builder(SonetCreatePost.this))
+									.setSingleChoiceItems(placesNames, -1, new DialogInterface.OnClickListener() {
 										@Override
 										public void onClick(DialogInterface dialog, int which) {
 											mAccountsToPost.put(accountId, placesIds[which]);
@@ -287,7 +298,8 @@ public class SonetCreatePost extends Activity implements OnKeyListener, OnClickL
 											dialog.cancel();
 										}
 									})
-									.show();
+									.create();
+									mDialog.show();
 									break;
 								}
 							}
@@ -357,8 +369,8 @@ public class SonetCreatePost extends Activity implements OnKeyListener, OnClickL
 								accountIndexes[i] = entry.getKey();
 								accounts[i++] = entry.getValue();
 							}
-							AlertDialog.Builder dialog = new AlertDialog.Builder(this);
-							dialog.setTitle(R.string.accounts)
+							mDialog = (new AlertDialog.Builder(this))
+							.setTitle(R.string.accounts)
 							.setSingleChoiceItems(accounts, -1, new DialogInterface.OnClickListener() {
 								@Override
 								public void onClick(DialogInterface dialog, int which) {
@@ -372,7 +384,8 @@ public class SonetCreatePost extends Activity implements OnKeyListener, OnClickL
 									dialog.dismiss();
 								}
 							})
-							.show();
+							.create();
+							mDialog.show();
 						}
 					}
 				} else {
@@ -779,8 +792,8 @@ public class SonetCreatePost extends Activity implements OnKeyListener, OnClickL
 				defaults[i++] = mAccountsToPost.containsKey(id);
 				c.moveToNext();
 			}
-			AlertDialog.Builder dialog = new AlertDialog.Builder(this);
-			dialog.setTitle(R.string.accounts)
+			mDialog = (new AlertDialog.Builder(this))
+			.setTitle(R.string.accounts)
 			.setMultiChoiceItems(accounts, defaults, new DialogInterface.OnMultiChoiceClickListener() {
 				@Override
 				public void onClick(DialogInterface dialog, int which, boolean isChecked) {
@@ -808,8 +821,9 @@ public class SonetCreatePost extends Activity implements OnKeyListener, OnClickL
 								}										
 							}
 							if ((mLat != null) && (mLong != null)) {
-								AlertDialog.Builder locationDialog = new AlertDialog.Builder(SonetCreatePost.this);
-								locationDialog.setTitle(R.string.set_location)
+								dialog.cancel();
+								mDialog = (new AlertDialog.Builder(SonetCreatePost.this))
+								.setTitle(R.string.set_location)
 								.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
 									@Override
 									public void onClick(DialogInterface dialog, int which) {
@@ -823,7 +837,8 @@ public class SonetCreatePost extends Activity implements OnKeyListener, OnClickL
 										dialog.dismiss();
 									}
 								})
-								.show();
+								.create();
+								mDialog.show();
 							}
 						}
 					} else {
@@ -864,7 +879,8 @@ public class SonetCreatePost extends Activity implements OnKeyListener, OnClickL
 					dialog.dismiss();
 				}
 			})
-			.show();
+			.create();
+			mDialog.show();
 		}
 		c.close();
 	}
