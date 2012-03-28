@@ -149,7 +149,7 @@ public class SonetService extends Service {
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
 		onStart(intent, startId);
-		return START_STICKY;
+		return START_REDELIVER_INTENT;
 	}
 
 	@Override
@@ -604,11 +604,6 @@ public class SonetService extends Service {
 
 	@Override
 	public void onDestroy() {
-		// clean up
-		if (mInstantUpload != null) {
-			getContentResolver().unregisterContentObserver(mInstantUpload);
-			mInstantUpload = null;
-		}
 		if (!mStatusesLoaders.isEmpty()) {
 			Iterator<AsyncTask<Integer, String, Integer>> itr = mStatusesLoaders.values().iterator();
 			while (itr.hasNext()) {
@@ -687,10 +682,11 @@ public class SonetService extends Service {
 			}
 			settings.close();
 			// the alarm should always be set, rather than depend on the tasks to complete
-			Log.d(TAG,"set alarm;awi:"+appWidgetId+",hasCache:"+hasCache+",reload:"+reload+",refreshInterval:"+refreshInterval);
+			Log.d(TAG,"awi:"+appWidgetId+",hasCache:"+hasCache+",reload:"+reload+",refreshInterval:"+refreshInterval);
 			if ((appWidgetId != AppWidgetManager.INVALID_APPWIDGET_ID) && (!hasCache || reload) && (refreshInterval > 0)) {
 				mAlarmManager.cancel(PendingIntent.getService(SonetService.this, 0, new Intent(SonetService.this, SonetService.class).setAction(widget), 0));
 				mAlarmManager.set(backgroundUpdate ? AlarmManager.RTC_WAKEUP : AlarmManager.RTC, System.currentTimeMillis() + refreshInterval, PendingIntent.getService(SonetService.this, 0, new Intent(SonetService.this, SonetService.class).setData(Uri.withAppendedPath(Widgets.CONTENT_URI, widget)).setAction(ACTION_REFRESH), 0));
+				Log.d(TAG,"alarm set");
 			}
 			// query accounts
 			/* get statuses for all accounts
@@ -2006,6 +2002,7 @@ public class SonetService extends Service {
 			}
 			if (mAppWidgetIdsQueued.isEmpty() && mStatusesLoaders.isEmpty()) {
 				Sonet.release();
+				stopSelf();
 			} else {
 				processUpdates(SonetService.this);
 			}
