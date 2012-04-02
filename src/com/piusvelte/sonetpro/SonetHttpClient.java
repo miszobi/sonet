@@ -32,6 +32,7 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.StatusLine;
 import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.conn.scheme.PlainSocketFactory;
 import org.apache.http.conn.scheme.Scheme;
@@ -52,63 +53,62 @@ import android.util.Log;
 
 public class SonetHttpClient {
 
-	private static SonetHttpClient instance;
-	private static DefaultHttpClient httpClient;
 	private static final int CONNECTION_TIMEOUT = 60 * 1000;
 	private static final int SO_TIMEOUT = 5 * 60 * 1000;
 	private static final String TAG = "SonetHttpClient";
+	private static DefaultHttpClient ShttpClient = null;
 
 	private SonetHttpClient(Context context) {
-		SocketFactory sf;
-		try {
-			Class< ?> sslSessionCacheClass = Class.forName("android.net.SSLSessionCache");
-			Object sslSessionCache = sslSessionCacheClass.getConstructor(Context.class).newInstance(context);
-			Method getHttpSocketFactory = Class.forName("android.net.SSLCertificateSocketFactory").getMethod("getHttpSocketFactory", new Class< ?>[]{int.class, sslSessionCacheClass});
-			sf = (SocketFactory) getHttpSocketFactory.invoke(null, CONNECTION_TIMEOUT, sslSessionCache);
-		}catch(Exception e){
-			Log.e("HttpClientProvider", "Unable to use android.net.SSLCertificateSocketFactory to get a SSL session caching socket factory, falling back to a non-caching socket factory",e);
-			sf = SSLSocketFactory.getSocketFactory();
-		}
-		SchemeRegistry registry = new SchemeRegistry();
-		registry.register(new Scheme("http", PlainSocketFactory.getSocketFactory(), 80));
-		registry.register(new Scheme("https", sf, 443));
-		HttpParams params = new BasicHttpParams();
-		HttpConnectionParams.setConnectionTimeout(params, CONNECTION_TIMEOUT);
-		HttpConnectionParams.setSoTimeout(params, SO_TIMEOUT);
-		String versionName;
-		try {
-			versionName = context.getPackageManager().getPackageInfo(context.getPackageName(), 0).versionName;
-		} catch (NameNotFoundException e) {
-			throw new RuntimeException(e);
-		}
-		StringBuilder userAgent = new StringBuilder();
-		userAgent.append(context.getPackageName());
-		userAgent.append("/");
-		userAgent.append(versionName);
-		userAgent.append(" (");
-		userAgent.append("Linux; U; Android ");
-		userAgent.append(Build.VERSION.RELEASE);
-		userAgent.append("; ");
-		userAgent.append(Locale.getDefault());
-		userAgent.append("; ");
-		userAgent.append(Build.PRODUCT);
-		userAgent.append(")");
-		if (HttpProtocolParams.getUserAgent(params) != null) {
-			userAgent.append(" ");
-			userAgent.append(HttpProtocolParams.getUserAgent(params));
-		}
-		HttpProtocolParams.setUserAgent(params, userAgent.toString());
-		httpClient = new DefaultHttpClient(new ThreadSafeClientConnManager(params, registry), params);
 	}
 
-	protected static synchronized SonetHttpClient getInstance(Context context) {
-		if (instance == null) {
-			instance = new SonetHttpClient(context);
+	protected static DefaultHttpClient getThreadSafeClient(Context context) {
+		if (ShttpClient == null) {
+			Log.d(TAG,"create http client");
+			SocketFactory sf;
+			try {
+				Class< ?> sslSessionCacheClass = Class.forName("android.net.SSLSessionCache");
+				Object sslSessionCache = sslSessionCacheClass.getConstructor(Context.class).newInstance(context);
+				Method getHttpSocketFactory = Class.forName("android.net.SSLCertificateSocketFactory").getMethod("getHttpSocketFactory", new Class< ?>[]{int.class, sslSessionCacheClass});
+				sf = (SocketFactory) getHttpSocketFactory.invoke(null, CONNECTION_TIMEOUT, sslSessionCache);
+			}catch(Exception e){
+				Log.e("HttpClientProvider", "Unable to use android.net.SSLCertificateSocketFactory to get a SSL session caching socket factory, falling back to a non-caching socket factory",e);
+				sf = SSLSocketFactory.getSocketFactory();
+			}
+			SchemeRegistry registry = new SchemeRegistry();
+			registry.register(new Scheme("http", PlainSocketFactory.getSocketFactory(), 80));
+			registry.register(new Scheme("https", sf, 443));
+			HttpParams params = new BasicHttpParams();
+			HttpConnectionParams.setConnectionTimeout(params, CONNECTION_TIMEOUT);
+			HttpConnectionParams.setSoTimeout(params, SO_TIMEOUT);
+			String versionName;
+			try {
+				versionName = context.getPackageManager().getPackageInfo(context.getPackageName(), 0).versionName;
+			} catch (NameNotFoundException e) {
+				throw new RuntimeException(e);
+			}
+			StringBuilder userAgent = new StringBuilder();
+			userAgent.append(context.getPackageName());
+			userAgent.append("/");
+			userAgent.append(versionName);
+			userAgent.append(" (");
+			userAgent.append("Linux; U; Android ");
+			userAgent.append(Build.VERSION.RELEASE);
+			userAgent.append("; ");
+			userAgent.append(Locale.getDefault());
+			userAgent.append("; ");
+			userAgent.append(Build.PRODUCT);
+			userAgent.append(")");
+			if (HttpProtocolParams.getUserAgent(params) != null) {
+				userAgent.append(" ");
+				userAgent.append(HttpProtocolParams.getUserAgent(params));
+			}
+			HttpProtocolParams.setUserAgent(params, userAgent.toString());
+			ShttpClient = new DefaultHttpClient(new ThreadSafeClientConnManager(params, registry), params);
 		}
-		return instance;
+		return ShttpClient;
 	}
 
-	protected byte[] httpBlobResponse(HttpUriRequest httpRequest) {
+	protected static byte[] httpBlobResponse(HttpClient httpClient, HttpUriRequest httpRequest) {
 		if (httpClient != null) {
 			HttpResponse httpResponse;
 			try {
@@ -125,20 +125,32 @@ public class SonetHttpClient {
 					}
 					break;
 				}
+				entity.consumeContent();
 			} catch (ClientProtocolException e) {
 				Log.e(TAG, e.toString());
+				try {
+					httpRequest.abort();
+				} catch (UnsupportedOperationException ignore) {
+					Log.e(TAG, ignore.toString());
+				}
 			} catch (IOException e) {
 				Log.e(TAG, e.toString());
+				try {
+					httpRequest.abort();
+				} catch (UnsupportedOperationException ignore) {
+					Log.e(TAG, ignore.toString());
+				}
 			}
 		}
 		return null;
 	}
 
-	protected String httpResponse(HttpUriRequest httpRequest) {
+	protected static String httpResponse(HttpClient httpClient, HttpUriRequest httpRequest) {
 		String response = null;
 		if (httpClient != null) {
 			HttpResponse httpResponse;
 			try {
+				Log.d(TAG,"request: "+httpRequest.getURI().getHost().toString());
 				httpResponse = httpClient.execute(httpRequest);
 				StatusLine statusLine = httpResponse.getStatusLine();
 				HttpEntity entity = httpResponse.getEntity();
@@ -199,12 +211,28 @@ public class SonetHttpClient {
 					}
 					break;
 				}
+				entity.consumeContent();
 			} catch (ClientProtocolException e) {
 				Log.e(TAG, e.toString());
+				try {
+					httpRequest.abort();
+				} catch (UnsupportedOperationException ignore) {
+					Log.e(TAG, ignore.toString());
+				}
 			} catch (IllegalStateException e) {
 				Log.e(TAG, e.toString());
+				try {
+					httpRequest.abort();
+				} catch (UnsupportedOperationException ignore) {
+					Log.e(TAG, ignore.toString());
+				}
 			} catch (IOException e) {
 				Log.e(TAG, e.toString());
+				try {
+					httpRequest.abort();
+				} catch (UnsupportedOperationException ignore) {
+					Log.e(TAG, ignore.toString());
+				}
 			}
 		}
 		return response;
