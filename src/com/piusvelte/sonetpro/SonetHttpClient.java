@@ -21,11 +21,10 @@ package com.piusvelte.sonetpro;
 
 import static com.piusvelte.sonetpro.Sonet.getBlob;
 
-import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
+import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.lang.reflect.Method;
 import java.util.Locale;
 
@@ -122,7 +121,7 @@ public class SonetHttpClient {
 				case 201:
 				case 204:
 					if (entity != null) {
-						return getBlob(entity.getContent());
+						return getBlob(new FlushedInputStream(entity.getContent()));
 					}
 					break;
 				}
@@ -213,6 +212,30 @@ public class SonetHttpClient {
 			}
 		}
 		return response;
+	}
+	
+	protected static class FlushedInputStream extends FilterInputStream {
+	    public FlushedInputStream(InputStream inputStream) {
+	        super(inputStream);
+	    }
+
+	    @Override
+	    public long skip(long n) throws IOException {
+	        long totalBytesSkipped = 0L;
+	        while (totalBytesSkipped < n) {
+	            long bytesSkipped = in.skip(n - totalBytesSkipped);
+	            if (bytesSkipped == 0L) {
+	                  int nextByte = read();
+	                  if (nextByte < 0) {
+	                      break;  // we reached EOF
+	                  } else {
+	                      bytesSkipped = 1; // we read one byte
+	                  }
+	           }
+	            totalBytesSkipped += bytesSkipped;
+	        }
+	        return totalBytesSkipped;
+	    }
 	}
 
 }
