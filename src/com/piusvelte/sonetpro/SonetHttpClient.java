@@ -111,10 +111,11 @@ public class SonetHttpClient {
 	protected static byte[] httpBlobResponse(HttpClient httpClient, HttpUriRequest httpRequest) {
 		if (httpClient != null) {
 			HttpResponse httpResponse;
+			HttpEntity entity = null;
 			try {
 				httpResponse = httpClient.execute(httpRequest);
 				StatusLine statusLine = httpResponse.getStatusLine();
-				HttpEntity entity = httpResponse.getEntity();
+				entity = httpResponse.getEntity();
 
 				switch(statusLine.getStatusCode()) {
 				case 200:
@@ -125,7 +126,6 @@ public class SonetHttpClient {
 					}
 					break;
 				}
-				entity.consumeContent();
 			} catch (ClientProtocolException e) {
 				Log.e(TAG, e.toString());
 				try {
@@ -140,6 +140,14 @@ public class SonetHttpClient {
 				} catch (UnsupportedOperationException ignore) {
 					Log.e(TAG, ignore.toString());
 				}
+			} finally {
+				if (entity != null) {
+					try {
+						entity.consumeContent();
+					} catch (IOException e) {
+						Log.e(TAG, e.toString());
+					}					
+				}
 			}
 		}
 		return null;
@@ -149,11 +157,12 @@ public class SonetHttpClient {
 		String response = null;
 		if (httpClient != null) {
 			HttpResponse httpResponse;
+			HttpEntity entity = null;
 			try {
 				Log.d(TAG,"request: "+httpRequest.getURI().getHost().toString());
 				httpResponse = httpClient.execute(httpRequest);
 				StatusLine statusLine = httpResponse.getStatusLine();
-				HttpEntity entity = httpResponse.getEntity();
+				entity = httpResponse.getEntity();
 
 				switch(statusLine.getStatusCode()) {
 				case 200:
@@ -187,7 +196,6 @@ public class SonetHttpClient {
 					}
 					break;
 				}
-				entity.consumeContent();
 			} catch (ClientProtocolException e) {
 				Log.e(TAG, e.toString());
 				try {
@@ -208,6 +216,14 @@ public class SonetHttpClient {
 					httpRequest.abort();
 				} catch (UnsupportedOperationException ignore) {
 					Log.e(TAG, ignore.toString());
+				}
+			} finally {
+				if (entity != null) {
+					try {
+						entity.consumeContent();
+					} catch (IOException e) {
+						Log.e(TAG, e.toString());
+					}					
 				}
 			}
 		}
