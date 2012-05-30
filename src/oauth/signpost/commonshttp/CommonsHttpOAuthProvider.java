@@ -58,7 +58,8 @@ public class CommonsHttpOAuthProvider extends AbstractOAuthProvider {
 	@Override
 	protected HttpRequest createRequest(String endpointUrl) throws Exception {
 		// MySpace doesn't support the POST method
-		// HttpPost request = new HttpPost(endpointUrl);
+//		HttpPost request = new HttpPost(endpointUrl);
+		android.util.Log.d("CommonsHttpOAuthProvider", "createRequest: " + endpointUrl);
 		HttpGet request = new HttpGet(endpointUrl);
 		return new HttpRequestAdapter(request);
 	}

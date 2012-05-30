@@ -122,7 +122,7 @@ public class OAuthLogin extends Activity implements OnCancelListener, OnClickLis
 					@Override
 					protected String doInBackground(String... args) {
 						try {
-							return mSonetOAuth.getAuthUrl(args[0], args[1], args[2], args[3], Boolean.parseBoolean(args[4]));
+							return mSonetOAuth.getAuthUrl(args[0], args[1], args[2], args[3], Boolean.parseBoolean(args[4]), mHttpClient);
 						} catch (OAuthMessageSignerException e) {
 							e.printStackTrace();
 						} catch (OAuthNotAuthorizedException e) {
@@ -153,12 +153,16 @@ public class OAuthLogin extends Activity implements OnCancelListener, OnClickLis
 					@Override
 					public void onCancel(DialogInterface dialog) {
 						if (!asyncTask.isCancelled()) asyncTask.cancel(true);
+						dialog.cancel();
+						OAuthLogin.this.finish();
 					}
 				});
 				loadingDialog.setButton(ProgressDialog.BUTTON_NEGATIVE, getString(android.R.string.cancel), new DialogInterface.OnClickListener() {
 					@Override
 					public void onClick(DialogInterface dialog, int which) {
+						if (!asyncTask.isCancelled()) asyncTask.cancel(true);
 						dialog.cancel();
+						OAuthLogin.this.finish();
 					}
 				});
 				switch (service) {
